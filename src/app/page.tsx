@@ -339,9 +339,9 @@ export default function Home() {
                     <Image
                       alt={demoImage1.description}
                       className="aspect-video overflow-hidden rounded-t-lg object-cover"
-                      height={demoImage1.imageUrl.split('/').pop()}
+                      height={360}
                       src={demoImage1.imageUrl}
-                      width={demoImage1.imageUrl.split('/')[demoImage1.imageUrl.split('/').length-2]}
+                      width={640}
                       data-ai-hint={demoImage1.imageHint}
                     />
                   </CardContent>
@@ -357,9 +357,9 @@ export default function Home() {
                     <Image
                       alt={demoImage2.description}
                       className="aspect-video overflow-hidden rounded-t-lg object-cover"
-                      height={demoImage2.imageUrl.split('/').pop()}
+                      height={360}
                       src={demoImage2.imageUrl}
-                      width={demoImage2.imageUrl.split('/')[demoImage2.imageUrl.split('/').length-2]}
+                      width={640}
                       data-ai-hint={demoImage2.imageHint}
                     />
                   </CardContent>
@@ -375,9 +375,9 @@ export default function Home() {
                     <Image
                       alt={demoImage3.description}
                       className="aspect-video overflow-hidden rounded-t-lg object-cover"
-                      height={demoImage3.imageUrl.split('/').pop()}
+                      height={360}
                       src={demoImage3.imageUrl}
-                      width={demoImage3.imageUrl.split('/')[demoImage3.imageUrl.split('/').length-2]}
+                      width={640}
                       data-ai-hint={demoImage3.imageHint}
                     />
                   </CardContent>
