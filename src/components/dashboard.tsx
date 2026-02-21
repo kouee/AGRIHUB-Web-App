@@ -30,18 +30,26 @@ import { format } from 'date-fns';
 
 type DataRecord = {
   timestamp: string;
-  ph: number;
-  ec: number;
-  temp_c: number;
-  water_level_percent: number;
+  ec_value: number;
+  ph_value: number;
+  water_temp: number;
+  lux_value: number;
+  humidity: number;
+  surround_temp: number;
+  water_level: string;
+  dosing_pump: string;
 };
 
-const data: DataRecord[] = hydroponicsData.map(d => ({
-    ...d,
-    ph: Number(d.ph),
-    ec: Number(d.ec),
-    temp_c: Number(d.temp_c),
-    water_level_percent: Number(d.water_level_percent)
+const data: DataRecord[] = (hydroponicsData as any[]).map(d => ({
+  timestamp: d.timestamp,
+  ec_value: Number(d.ec_value),
+  ph_value: Number(d.ph_value),
+  water_temp: Number(d.water_temp),
+  lux_value: Number(d.lux_value),
+  humidity: Number(d.humidity),
+  surround_temp: Number(d.surround_temp),
+  water_level: d.water_level,
+  dosing_pump: d.dosing_pump,
 }));
 
 
@@ -70,11 +78,11 @@ export default function Dashboard() {
   }, [filteredData, isClient]);
 
   const downloadCSV = () => {
-    const headers = ['timestamp', 'ph', 'ec', 'temp_c', 'water_level_percent'];
+    const headers: (keyof DataRecord)[] = ['timestamp', 'ph_value', 'ec_value', 'water_temp', 'surround_temp', 'humidity', 'lux_value', 'water_level', 'dosing_pump'];
     let csvContent = 'data:text/csv;charset=utf-8,' + headers.join(',') + '\n';
     
     csvContent += filteredData
-      .map(row => headers.map(header => row[header as keyof DataRecord]).join(','))
+      .map(row => headers.map(header => row[header]).join(','))
       .join('\n');
       
     const encodedUri = encodeURI(csvContent);
@@ -138,30 +146,43 @@ export default function Dashboard() {
                 <LineChart data={formattedData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                    <YAxis yAxisId="left" domain={[5, 7]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                    <YAxis yAxisId="left" domain={[5, 8]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
                     <YAxis yAxisId="right" orientation="right" domain={[1, 2.5]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend />
-                    <Line yAxisId="left" type="monotone" dataKey="ph" name="pH" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
-                    <Line yAxisId="right" type="monotone" dataKey="ec" name="EC (mS/cm)" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false}/>
+                    <Line yAxisId="left" type="monotone" dataKey="ph_value" name="pH" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
+                    <Line yAxisId="right" type="monotone" dataKey="ec_value" name="EC (mS/cm)" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false}/>
                 </LineChart>
                 </ResponsiveContainer>
             </div>
             <div className="h-80">
-                <h3 className="text-lg font-semibold mb-2 text-center">Temperature & Water Level</h3>
+                <h3 className="text-lg font-semibold mb-2 text-center">Temperature Analysis</h3>
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={formattedData}>
+                    <LineChart data={formattedData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                        <YAxis yAxisId="left" domain={[15, 30]} label={{ value: '°C', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
-                        <YAxis yAxisId="right" orientation="right" domain={[0, 100]} label={{ value: '%', angle: 90, position: 'insideRight', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
+                        <YAxis yAxisId="left" domain={[20, 30]} label={{ value: '°C', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
+                        <YAxis yAxisId="right" orientation="right" domain={[20, 30]} label={{ value: '°C', angle: 90, position: 'insideRight', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
                         <Tooltip content={<CustomTooltip />} />
                         <Legend />
-                        <Bar yAxisId="left" dataKey="temp_c" name="Temp (°C)" fill="hsl(var(--chart-1))" />
-                        <Line yAxisId="right" type="monotone" dataKey="water_level_percent" name="Water Level (%)" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} />
-                    </BarChart>
+                        <Line yAxisId="left" type="monotone" dataKey="water_temp" name="Water Temp (°C)" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
+                        <Line yAxisId="right" type="monotone" dataKey="surround_temp" name="Air Temp (°C)" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} />
+                    </LineChart>
                 </ResponsiveContainer>
             </div>
+        </div>
+        <div className="h-80">
+            <h3 className="text-lg font-semibold mb-2 text-center">Humidity</h3>
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={formattedData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                    <YAxis domain={[50, 100]} label={{ value: '%', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend />
+                    <Bar dataKey="humidity" name="Humidity (%)" fill="hsl(var(--chart-3))" />
+                </BarChart>
+            </ResponsiveContainer>
         </div>
 
         <div>
@@ -173,18 +194,26 @@ export default function Dashboard() {
                   <TableHead>Timestamp</TableHead>
                   <TableHead className="text-right">pH</TableHead>
                   <TableHead className="text-right">EC (mS/cm)</TableHead>
-                  <TableHead className="text-right">Temp (°C)</TableHead>
-                  <TableHead className="text-right">Water Level (%)</TableHead>
+                  <TableHead className="text-right">Water Temp (°C)</TableHead>
+                  <TableHead className="text-right">Air Temp (°C)</TableHead>
+                  <TableHead className="text-right">Humidity (%)</TableHead>
+                  <TableHead className="text-right">Lux</TableHead>
+                  <TableHead>Water Level</TableHead>
+                  <TableHead>Dosing Pump</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {formattedData.slice().reverse().map(row => (
                   <TableRow key={row.timestamp}>
                     <TableCell>{isClient ? format(new Date(row.timestamp), 'yyyy-MM-dd HH:mm:ss') : ''}</TableCell>
-                    <TableCell className="text-right">{row.ph.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{row.ec.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{row.temp_c.toFixed(1)}</TableCell>
-                    <TableCell className="text-right">{row.water_level_percent.toFixed(1)}</TableCell>
+                    <TableCell className="text-right">{row.ph_value.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{row.ec_value.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{row.water_temp.toFixed(1)}</TableCell>
+                    <TableCell className="text-right">{row.surround_temp.toFixed(1)}</TableCell>
+                    <TableCell className="text-right">{row.humidity.toFixed(1)}</TableCell>
+                    <TableCell className="text-right">{row.lux_value}</TableCell>
+                    <TableCell>{row.water_level}</TableCell>
+                    <TableCell>{row.dosing_pump}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
