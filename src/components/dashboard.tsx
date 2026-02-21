@@ -52,6 +52,7 @@ const data: DataRecord[] = (hydroponicsData as any[]).map(d => ({
   dosing_pump: d.dosing_pump,
 }));
 
+const parseDate = (timestamp: string) => new Date(timestamp.replace(' ', 'T'));
 
 export default function Dashboard() {
   const [filter, setFilter] = useState<string>('7d');
@@ -82,13 +83,13 @@ export default function Dashboard() {
         return data;
     }
 
-    return data.filter(d => isAfter(new Date(d.timestamp), startDate));
+    return data.filter(d => isAfter(parseDate(d.timestamp), startDate));
   }, [filter]);
 
   const formattedData = useMemo(() => {
     return filteredData.map(d => ({
       ...d,
-      formattedTimestamp: isClient ? format(new Date(d.timestamp), 'MMM d, HH:mm') : '',
+      formattedTimestamp: isClient ? format(parseDate(d.timestamp), 'MMM d, HH:mm') : '',
     }));
   }, [filteredData, isClient]);
   
@@ -227,11 +228,11 @@ export default function Dashboard() {
               <TableBody>
                 {formattedData.slice().reverse().map(row => (
                   <TableRow key={row.timestamp}>
-                    <TableCell>{isClient ? format(new Date(row.timestamp), 'yyyy-MM-dd HH:mm:ss') : ''}</TableCell>
+                    <TableCell>{isClient ? format(parseDate(row.timestamp), 'yyyy-MM-dd HH:mm:ss') : ''}</TableCell>
                     <TableCell className="text-right">{row.ph_value !== null ? row.ph_value.toFixed(2) : 'N/A'}</TableCell>
                     <TableCell className="text-right">{row.ec_value !== null ? row.ec_value.toFixed(2) : 'N/A'}</TableCell>
                     <TableCell className="text-right">{row.water_temp !== null ? row.water_temp.toFixed(1) : 'N/A'}</TableCell>
-                    <TableCell className="text-right">{row.surround_temp !== null ? row.surround_temp.toFixed(1) : 'N/A'}</TableCell>
+                    <TableCell className="text-right">{row.surround_temp !== null ? row.surround_temp.toFixed(1) : 'N/á'}</TableCell>
                     <TableCell className="text-right">{row.humidity !== null ? row.humidity.toFixed(1) : 'N/A'}</TableCell>
                     <TableCell className="text-right">{row.lux_value !== null ? row.lux_value : 'N/A'}</TableCell>
                     <TableCell>{row.water_level}</TableCell>
