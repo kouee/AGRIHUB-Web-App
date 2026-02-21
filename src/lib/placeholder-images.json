@@ -1,3 +1,40 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "demo-1",
+      "description": "Dashboard screenshot showing real-time data.",
+      "imageUrl": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxkYXNoYm9hcmQlMjBjaGFydHxlbnwwfHx8fDE3NzE1OTYzNjl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "dashboard chart"
+    },
+    {
+      "id": "demo-2",
+      "description": "Close-up of the sensor array in the hydroponic system.",
+      "imageUrl": "https://images.unsplash.com/photo-1758290731413-64af8f011b9d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxoeWRyb3BvbmljcyUyMHNlbnNvcnxlbnwwfHx8fDE3NzE2NDc0MTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "hydroponics sensor"
+    },
+    {
+      "id": "demo-3",
+      "description": "Lush green plants growing under the automated system.",
+      "imageUrl": "https://images.unsplash.com/photo-1676410360432-22f38aefe496?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxsZXR0dWNlJTIwaHlkcm9wb25pY3N8ZW58MHx8fHwxNzcxNjQ3NDE1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "lettuce hydroponics"
+    },
+    {
+      "id": "team-1",
+      "description": "Portrait of a team member.",
+      "imageUrl": "https://images.unsplash.com/photo-1521119989659-a83eee488004?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzE1OTUwNDd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "team-2",
+      "description": "Portrait of a team member.",
+      "imageUrl": "https://images.unsplash.com/photo-1590086782792-42dd2350140d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzE1OTUwNDd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    },
+    {
+      "id": "team-3",
+      "description": "Portrait of a team member.",
+      "imageUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxwZXJzb24lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzE1OTUwNDd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person portrait"
+    }
+  ]
 }
