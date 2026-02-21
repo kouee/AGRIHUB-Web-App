@@ -192,7 +192,7 @@ export default function Home() {
                 </p>
               </div>
               <div className="w-full max-w-4xl pt-8">
-                 <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-2">
+                 <div className="flex flex-wrap flex-col md:flex-row items-center justify-center gap-4 md:gap-2">
                     <div className="flex items-center gap-2">
                       <Card className="p-4 w-40 text-center">
                           <Cpu className="mx-auto w-8 h-8 mb-2 text-accent"/>
@@ -524,3 +524,4 @@ export default function Home() {
     
 
     
+
