@@ -1,3 +1,4 @@
+
 import React from 'react';
 import Image from 'next/image';
 import {
@@ -84,29 +85,36 @@ export default function Home() {
     <div className="flex min-h-screen w-full flex-col">
       <Header />
       <main className="flex-1">
-        <AnimatedSection id="hero" className="w-full pt-20 md:pt-32 pb-12 md:pb-24">
-          <div className="container px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
-              <div className="flex flex-col justify-center space-y-4">
-                <div className="space-y-4">
-                  <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none text-balance">
-                    Hydroponic Monitoring & Automation System
-                  </h1>
-                  <p className="max-w-[600px] text-muted-foreground md:text-xl text-balance">
-                    Revolutionize your hydroponic farm with AGRIHUB. Our automated system ensures optimal plant growth by precisely monitoring and adjusting key environmental factors in real-time.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Button asChild size="lg" className="font-semibold">
-                    <a href="#overview">View System Overview</a>
-                  </Button>
-                  <Button asChild size="lg" variant="secondary" className="font-semibold">
-                    <a href="#dashboard">See Dashboard</a>
-                  </Button>
-                </div>
+        <AnimatedSection id="hero" className="relative w-full h-[70vh] flex items-center justify-center text-center">
+          {demoImage1 && (
+            <Image
+              alt={demoImage1.description}
+              src={demoImage1.imageUrl}
+              fill
+              style={{ objectFit: 'cover' }}
+              className="z-0"
+              data-ai-hint={demoImage1.imageHint}
+              priority
+            />
+          )}
+          <div className="absolute inset-0 bg-black/60 z-10" />
+          <div className="container px-4 md:px-6 relative z-20">
+            <div className="flex flex-col justify-center items-center space-y-4">
+              <div className="space-y-4">
+                <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none text-balance text-white">
+                  Hydroponic Monitoring & Automation System
+                </h1>
+                <p className="max-w-[600px] mx-auto text-gray-200 md:text-xl text-balance">
+                  Revolutionize your hydroponic farm with AGRIHUB. Our automated system ensures optimal plant growth by precisely monitoring and adjusting key environmental factors in real-time.
+                </p>
               </div>
-              <div className="flex items-center justify-center">
-                 <Leaf className="w-48 h-48 md:w-72 md:h-72 text-primary/10" strokeWidth={0.5} />
+              <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                <Button asChild size="lg" className="font-semibold">
+                  <a href="#overview">View System Overview</a>
+                </Button>
+                <Button asChild size="lg" variant="secondary" className="font-semibold">
+                  <a href="#dashboard">See Dashboard</a>
+                </Button>
               </div>
             </div>
           </div>
@@ -514,3 +522,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
