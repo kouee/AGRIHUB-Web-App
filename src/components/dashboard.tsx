@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   LineChart,
   Line,
@@ -47,6 +47,11 @@ const data: DataRecord[] = hydroponicsData.map(d => ({
 
 export default function Dashboard() {
   const [filter, setFilter] = useState<string>('all');
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const filteredData = useMemo(() => {
     const now = data.length;
@@ -60,9 +65,9 @@ export default function Dashboard() {
   const formattedData = useMemo(() => {
     return filteredData.map(d => ({
       ...d,
-      formattedTimestamp: format(new Date(d.timestamp), 'MMM d, HH:mm'),
+      formattedTimestamp: isClient ? format(new Date(d.timestamp), 'MMM d, HH:mm') : '',
     }));
-  }, [filteredData]);
+  }, [filteredData, isClient]);
 
   const downloadCSV = () => {
     const headers = ['timestamp', 'ph', 'ec', 'temp_c', 'water_level_percent'];
@@ -175,7 +180,7 @@ export default function Dashboard() {
               <TableBody>
                 {formattedData.slice().reverse().map(row => (
                   <TableRow key={row.timestamp}>
-                    <TableCell>{format(new Date(row.timestamp), 'yyyy-MM-dd HH:mm:ss')}</TableCell>
+                    <TableCell>{isClient ? format(new Date(row.timestamp), 'yyyy-MM-dd HH:mm:ss') : ''}</TableCell>
                     <TableCell className="text-right">{row.ph.toFixed(2)}</TableCell>
                     <TableCell className="text-right">{row.ec.toFixed(2)}</TableCell>
                     <TableCell className="text-right">{row.temp_c.toFixed(1)}</TableCell>
