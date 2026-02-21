@@ -30,24 +30,24 @@ import { format, subHours, subDays, isAfter } from 'date-fns';
 
 type DataRecord = {
   timestamp: string;
-  ec_value: number;
-  ph_value: number;
-  water_temp: number;
-  lux_value: number;
-  humidity: number;
-  surround_temp: number;
+  ec_value: number | null;
+  ph_value: number | null;
+  water_temp: number | null;
+  lux_value: number | null;
+  humidity: number | null;
+  surround_temp: number | null;
   water_level: string;
   dosing_pump: string;
 };
 
 const data: DataRecord[] = (hydroponicsData as any[]).map(d => ({
   timestamp: d.timestamp,
-  ec_value: Number(d.ec_value),
-  ph_value: Number(d.ph_value),
-  water_temp: Number(d.water_temp),
-  lux_value: Number(d.lux_value),
-  humidity: Number(d.humidity),
-  surround_temp: Number(d.surround_temp),
+  ec_value: d.ec_value === 'N/A' ? null : Number(d.ec_value),
+  ph_value: d.ph_value === 'N/A' ? null : Number(d.ph_value),
+  water_temp: d.water_temp === 'N/A' ? null : Number(d.water_temp),
+  lux_value: d.lux_value === 'N/A' ? null : Number(d.lux_value),
+  humidity: d.humidity === 'N/A' ? null : Number(d.humidity),
+  surround_temp: d.surround_temp === 'N/A' ? null : Number(d.surround_temp),
   water_level: d.water_level,
   dosing_pump: d.dosing_pump,
 }));
@@ -172,8 +172,8 @@ export default function Dashboard() {
                     <YAxis yAxisId="right" orientation="right" domain={[1, 2.5]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend />
-                    <Line yAxisId="left" type="monotone" dataKey="ph_value" name="pH" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
-                    <Line yAxisId="right" type="monotone" dataKey="ec_value" name="EC (mS/cm)" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false}/>
+                    <Line yAxisId="left" type="monotone" dataKey="ph_value" name="pH" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} connectNulls />
+                    <Line yAxisId="right" type="monotone" dataKey="ec_value" name="EC (mS/cm)" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} connectNulls/>
                 </LineChart>
                 </ResponsiveContainer>
             </div>
@@ -187,8 +187,8 @@ export default function Dashboard() {
                         <YAxis yAxisId="right" orientation="right" domain={[20, 30]} label={{ value: '°C', angle: 90, position: 'insideRight', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
                         <Tooltip content={<CustomTooltip />} />
                         <Legend />
-                        <Line yAxisId="left" type="monotone" dataKey="water_temp" name="Water Temp (°C)" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
-                        <Line yAxisId="right" type="monotone" dataKey="surround_temp" name="Air Temp (°C)" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} />
+                        <Line yAxisId="left" type="monotone" dataKey="water_temp" name="Water Temp (°C)" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} connectNulls />
+                        <Line yAxisId="right" type="monotone" dataKey="surround_temp" name="Air Temp (°C)" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} connectNulls />
                     </LineChart>
                 </ResponsiveContainer>
             </div>
@@ -228,12 +228,12 @@ export default function Dashboard() {
                 {formattedData.slice().reverse().map(row => (
                   <TableRow key={row.timestamp}>
                     <TableCell>{isClient ? format(new Date(row.timestamp), 'yyyy-MM-dd HH:mm:ss') : ''}</TableCell>
-                    <TableCell className="text-right">{row.ph_value.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{row.ec_value.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{row.water_temp.toFixed(1)}</TableCell>
-                    <TableCell className="text-right">{row.surround_temp.toFixed(1)}</TableCell>
-                    <TableCell className="text-right">{row.humidity.toFixed(1)}</TableCell>
-                    <TableCell className="text-right">{row.lux_value}</TableCell>
+                    <TableCell className="text-right">{row.ph_value !== null ? row.ph_value.toFixed(2) : 'N/A'}</TableCell>
+                    <TableCell className="text-right">{row.ec_value !== null ? row.ec_value.toFixed(2) : 'N/A'}</TableCell>
+                    <TableCell className="text-right">{row.water_temp !== null ? row.water_temp.toFixed(1) : 'N/A'}</TableCell>
+                    <TableCell className="text-right">{row.surround_temp !== null ? row.surround_temp.toFixed(1) : 'N/A'}</TableCell>
+                    <TableCell className="text-right">{row.humidity !== null ? row.humidity.toFixed(1) : 'N/A'}</TableCell>
+                    <TableCell className="text-right">{row.lux_value !== null ? row.lux_value : 'N/A'}</TableCell>
                     <TableCell>{row.water_level}</TableCell>
                     <TableCell>{row.dosing_pump}</TableCell>
                   </TableRow>
