@@ -86,17 +86,14 @@ export default function Home() {
       <Header />
       <main className="flex-1">
         <AnimatedSection id="hero" className="relative w-full h-[70vh] flex items-center justify-center text-center">
-          {demoImage1 && (
-            <Image
-              alt={demoImage1.description}
-              src={demoImage1.imageUrl}
-              fill
-              style={{ objectFit: 'cover' }}
-              className="z-0"
-              data-ai-hint={demoImage1.imageHint}
-              priority
-            />
-          )}
+          <Image
+            alt="Hydroponics setup wallpaper"
+            src="/wallpaper.jpg"
+            fill
+            style={{ objectFit: 'cover' }}
+            className="z-0"
+            priority
+          />
           <div className="absolute inset-0 bg-black/60 z-10" />
           <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-background to-transparent z-10" />
           <div className="container px-4 md:px-6 relative z-20">

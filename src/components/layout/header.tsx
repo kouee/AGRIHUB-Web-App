@@ -2,27 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-
-const SproutIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg viewBox="0 0 60 60" fill="currentColor" {...props}>
-      <path
-        transform="rotate(-20 30 30)"
-        d="M30 0 C 10 20, 10 70, 30 90 C 50 70, 50 20, 30 0 Z"
-      />
-      <path
-        transform="rotate(25 30 30) scale(0.7) translate(15,10)"
-        d="M30 0 C 10 20, 10 70, 30 90 C 50 70, 50 20, 30 0 Z"
-      />
-      <path
-        transform="rotate(-50 30 30) scale(0.8) translate(-15,20)"
-        d="M30 0 C 10 20, 10 70, 30 90 C 50 70, 50 20, 30 0 Z"
-      />
-    </svg>
-  );
 
 const navItems = [
   { href: '#problem', label: 'Problem' },
@@ -89,9 +73,8 @@ export default function Header() {
       isScrolled ? "border-border bg-background/95 backdrop-blur-sm" : "border-transparent bg-transparent"
     )}>
       <div className="container flex h-16 items-center px-4 md:px-6">
-        <Link href="#hero" className="mr-6 flex items-center gap-2">
-          <SproutIcon className="h-6 w-6 text-primary" />
-          <span className="font-headline font-bold text-lg">SprouT</span>
+        <Link href="#hero" className="mr-6 flex items-center">
+          <Image src="/logo.png" alt="SprouT Logo" width={100} height={30} className="object-contain" />
         </Link>
         <nav className="hidden flex-1 items-center justify-center gap-6 md:flex">
           {navItems.map(item => <NavLink key={item.href} {...item} />)}
@@ -109,10 +92,11 @@ export default function Header() {
             </SheetTrigger>
             <SheetContent side="right">
               <div className="grid gap-4 py-6">
-                <Link href="#hero" className="mr-6 flex items-center gap-2">
-                    <SproutIcon className="h-6 w-6 text-primary" />
-                    <span className="font-headline font-bold text-lg">SprouT</span>
-                </Link>
+                <SheetClose asChild>
+                  <Link href="#hero" className="mr-6 flex items-center">
+                      <Image src="/logo.png" alt="SprouT Logo" width={100} height={30} className="object-contain" />
+                  </Link>
+                </SheetClose>
                 {navItems.map(item => <NavLink key={item.href} {...item} isMobile={true} />)}
                 <SheetClose asChild>
                   <Button asChild className="mt-4">
