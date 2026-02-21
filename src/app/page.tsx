@@ -98,6 +98,7 @@ export default function Home() {
             />
           )}
           <div className="absolute inset-0 bg-black/60 z-10" />
+          <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-background to-transparent z-10" />
           <div className="container px-4 md:px-6 relative z-20">
             <div className="flex flex-col justify-center items-center space-y-4">
               <div className="space-y-4">
@@ -522,5 +523,7 @@ export default function Home() {
     </div>
   );
 }
+
+    
 
     
