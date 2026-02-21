@@ -63,6 +63,7 @@ export default function Dashboard() {
   }, []);
 
   const filteredData = useMemo(() => {
+    if (!data || data.length === 0) return [];
     const now = new Date();
     if (filter === 'all') {
       return data;
@@ -82,8 +83,12 @@ export default function Dashboard() {
       default:
         return data;
     }
+    
+    return data.filter(d => {
+        const dDate = parseDate(d.timestamp);
+        return dDate instanceof Date && !isNaN(dDate.getTime()) && isAfter(dDate, startDate);
+    });
 
-    return data.filter(d => isAfter(parseDate(d.timestamp), startDate));
   }, [filter]);
 
   const formattedData = useMemo(() => {
@@ -232,7 +237,7 @@ export default function Dashboard() {
                     <TableCell className="text-right">{row.ph_value !== null ? row.ph_value.toFixed(2) : 'N/A'}</TableCell>
                     <TableCell className="text-right">{row.ec_value !== null ? row.ec_value.toFixed(2) : 'N/A'}</TableCell>
                     <TableCell className="text-right">{row.water_temp !== null ? row.water_temp.toFixed(1) : 'N/A'}</TableCell>
-                    <TableCell className="text-right">{row.surround_temp !== null ? row.surround_temp.toFixed(1) : 'N/á'}</TableCell>
+                    <TableCell className="text-right">{row.surround_temp !== null ? row.surround_temp.toFixed(1) : 'N/A'}</TableCell>
                     <TableCell className="text-right">{row.humidity !== null ? row.humidity.toFixed(1) : 'N/A'}</TableCell>
                     <TableCell className="text-right">{row.lux_value !== null ? row.lux_value : 'N/A'}</TableCell>
                     <TableCell>{row.water_level}</TableCell>
