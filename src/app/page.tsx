@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Image from 'next/image';
 import {
@@ -192,43 +191,46 @@ export default function Home() {
                 </p>
               </div>
               <div className="w-full max-w-4xl pt-8">
-                 <div className="flex flex-wrap flex-col md:flex-row items-center justify-center gap-4 md:gap-2">
-                    <div className="flex items-center gap-2">
-                      <Card className="p-4 w-40 text-center">
-                          <Cpu className="mx-auto w-8 h-8 mb-2 text-accent"/>
-                          <p className="font-semibold">Sensors</p>
-                      </Card>
-                      <ArrowRight className="hidden md:block w-8 h-8 text-muted-foreground"/>
-                      <div className="md:hidden w-1 h-8 bg-border"></div>
+                 <div className="overflow-hidden relative group">
+                    <div className="flex gap-4 animate-scroll group-hover:[animation-play-state:paused]">
+                      {/* Duplicated for seamless scroll */}
+                      {Array(2).fill(0).map((_, i) => (
+                        <React.Fragment key={i}>
+                            <div className="flex-shrink-0">
+                                <Card className="p-4 w-40 text-center">
+                                    <Cpu className="mx-auto w-8 h-8 mb-2 text-accent"/>
+                                    <p className="font-semibold">Sensors</p>
+                                </Card>
+                            </div>
+                            <div className="flex-shrink-0">
+                                <Card className="p-4 w-40 text-center">
+                                    <Cable className="mx-auto w-8 h-8 mb-2 text-accent"/>
+                                    <p className="font-semibold">ESP32</p>
+                                </Card>
+                            </div>
+                            <div className="flex-shrink-0">
+                                <Card className="p-4 w-40 text-center">
+                                    <Bot className="mx-auto w-8 h-8 mb-2 text-accent"/>
+                                    <p className="font-semibold">Control</p>
+                                </Card>
+                            </div>
+                            <div className="flex-shrink-0">
+                                <Card className="p-4 w-40 text-center">
+                                    <Database className="mx-auto w-8 h-8 mb-2 text-accent"/>
+                                    <p className="font-semibold">Data Logging</p>
+                                </Card>
+                            </div>
+                            <div className="flex-shrink-0">
+                                <Card className="p-4 w-40 text-center">
+                                    <Presentation className="mx-auto w-8 h-8 mb-2 text-accent"/>
+                                    <p className="font-semibold">Dashboard</p>
+                                </Card>
+                            </div>
+                        </React.Fragment>
+                      ))}
                     </div>
-                     <div className="flex items-center gap-2">
-                      <Card className="p-4 w-40 text-center">
-                          <Cable className="mx-auto w-8 h-8 mb-2 text-accent"/>
-                          <p className="font-semibold">ESP32</p>
-                      </Card>
-                      <ArrowRight className="hidden md:block w-8 h-8 text-muted-foreground"/>
-                      <div className="md:hidden w-1 h-8 bg-border"></div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Card className="p-4 w-40 text-center">
-                          <Bot className="mx-auto w-8 h-8 mb-2 text-accent"/>
-                          <p className="font-semibold">Control</p>
-                      </Card>
-                      <ArrowRight className="hidden md:block w-8 h-8 text-muted-foreground"/>
-                      <div className="md:hidden w-1 h-8 bg-border"></div>
-                    </div>
-                     <div className="flex items-center gap-2">
-                      <Card className="p-4 w-40 text-center">
-                          <Database className="mx-auto w-8 h-8 mb-2 text-accent"/>
-                          <p className="font-semibold">Data Logging</p>
-                      </Card>
-                      <ArrowRight className="hidden md:block w-8 h-8 text-muted-foreground"/>
-                      <div className="md:hidden w-1 h-8 bg-border"></div>
-                    </div>
-                    <Card className="p-4 w-40 text-center">
-                        <Presentation className="mx-auto w-8 h-8 mb-2 text-accent"/>
-                        <p className="font-semibold">Dashboard</p>
-                    </Card>
+                    <div className="absolute top-0 left-0 w-16 h-full bg-gradient-to-r from-card to-transparent pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-16 h-full bg-gradient-to-l from-card to-transparent pointer-events-none" />
                  </div>
               </div>
             </div>
@@ -520,8 +522,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
-
-    
-
