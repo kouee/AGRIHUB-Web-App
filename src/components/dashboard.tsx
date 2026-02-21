@@ -26,7 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Download } from 'lucide-react';
 import hydroponicsData from '@/app/data/hydroponics-data.json';
-import { format } from 'date-fns';
+import { format, subHours, subDays, isAfter } from 'date-fns';
 
 type DataRecord = {
   timestamp: string;
@@ -54,7 +54,7 @@ const data: DataRecord[] = (hydroponicsData as any[]).map(d => ({
 
 
 export default function Dashboard() {
-  const [filter, setFilter] = useState<string>('all');
+  const [filter, setFilter] = useState<string>('7d');
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -62,12 +62,27 @@ export default function Dashboard() {
   }, []);
 
   const filteredData = useMemo(() => {
-    const now = data.length;
+    const now = new Date();
     if (filter === 'all') {
       return data;
     }
-    const numRecords = parseInt(filter, 10);
-    return data.slice(Math.max(0, now - numRecords));
+
+    let startDate: Date;
+    switch (filter) {
+      case '24h':
+        startDate = subHours(now, 24);
+        break;
+      case '7d':
+        startDate = subDays(now, 7);
+        break;
+      case '30d':
+        startDate = subDays(now, 30);
+        break;
+      default:
+        return data;
+    }
+
+    return data.filter(d => isAfter(new Date(d.timestamp), startDate));
   }, [filter]);
 
   const formattedData = useMemo(() => {
@@ -76,6 +91,13 @@ export default function Dashboard() {
       formattedTimestamp: isClient ? format(new Date(d.timestamp), 'MMM d, HH:mm') : '',
     }));
   }, [filteredData, isClient]);
+  
+  const filterLabels: { [key: string]: string } = {
+    '24h': 'the last 24 hours',
+    '7d': 'the last 7 days',
+    '30d': 'the last 30 days',
+    all: 'all time',
+  };
 
   const downloadCSV = () => {
     const headers: (keyof DataRecord)[] = ['timestamp', 'ph_value', 'ec_value', 'water_temp', 'surround_temp', 'humidity', 'lux_value', 'water_level', 'dosing_pump'];
@@ -116,19 +138,19 @@ export default function Dashboard() {
           <div>
             <CardTitle>System Analytics</CardTitle>
             <CardDescription>
-              Viewing {filter === 'all' ? 'all' : `last ${filter}`} records.
+              Viewing data for {filterLabels[filter]}.
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <Select value={filter} onValueChange={setFilter}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by date" />
+                <SelectValue placeholder="Filter by time" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Records</SelectItem>
-                <SelectItem value="10">Last 10 Records</SelectItem>
-                <SelectItem value="25">Last 25 Records</SelectItem>
-                <SelectItem value="50">Last 50 Records</SelectItem>
+                <SelectItem value="24h">Last 24 Hours</SelectItem>
+                <SelectItem value="7d">Last 7 Days</SelectItem>
+                <SelectItem value="30d">Last 30 Days</SelectItem>
+                <SelectItem value="all">All Time</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" size="icon" onClick={downloadCSV}>
