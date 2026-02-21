@@ -40,10 +40,12 @@ type DataRecord = {
   dosing_pump: string;
 };
 
+const parseDate = (timestamp: string) => new Date(timestamp.replace(' ', 'T'));
+
 const data: DataRecord[] = (hydroponicsData as any[]).map(d => ({
   timestamp: d.timestamp,
   ec_value: d.ec_value === 'N/A' ? null : Number(d.ec_value),
-  ph_value: d.ph_value === 'N/A' ? null : Number(d.ph_value),
+  ph_value: d.ph_value === 'N/A' || d.ph_value === 'N/á' ? null : Number(d.ph_value),
   water_temp: d.water_temp === 'N/A' ? null : Number(d.water_temp),
   lux_value: d.lux_value === 'N/A' ? null : Number(d.lux_value),
   humidity: d.humidity === 'N/A' ? null : Number(d.humidity),
@@ -52,7 +54,14 @@ const data: DataRecord[] = (hydroponicsData as any[]).map(d => ({
   dosing_pump: d.dosing_pump,
 }));
 
-const parseDate = (timestamp: string) => new Date(timestamp.replace(' ', 'T'));
+const validDates = data
+  .map(d => parseDate(d.timestamp))
+  .filter(d => d instanceof Date && !isNaN(d.getTime()));
+
+const latestDate = validDates.length > 0
+  ? new Date(Math.max(...validDates.map(d => d.getTime())))
+  : new Date();
+
 
 export default function Dashboard() {
   const [filter, setFilter] = useState<string>('7d');
@@ -64,7 +73,10 @@ export default function Dashboard() {
 
   const filteredData = useMemo(() => {
     if (!data || data.length === 0) return [];
-    const now = new Date();
+    
+    // Use the latest date from the data as the reference 'now'
+    const now = latestDate;
+
     if (filter === 'all') {
       return data;
     }
@@ -99,9 +111,9 @@ export default function Dashboard() {
   }, [filteredData, isClient]);
   
   const filterLabels: { [key: string]: string } = {
-    '24h': 'the last 24 hours',
-    '7d': 'the last 7 days',
-    '30d': 'the last 30 days',
+    '24h': 'the last 24 hours of data',
+    '7d': 'the last 7 days of data',
+    '30d': 'the last 30 days of data',
     all: 'all time',
   };
 
@@ -110,7 +122,11 @@ export default function Dashboard() {
     let csvContent = 'data:text/csv;charset=utf-8,' + headers.join(',') + '\n';
     
     csvContent += filteredData
-      .map(row => headers.map(header => row[header]).join(','))
+      .map(row => headers.map(header => {
+        const val = row[header];
+        if(val === null || val === undefined) return 'N/A';
+        return val;
+      }).join(','))
       .join('\n');
       
     const encodedUri = encodeURI(csvContent);
@@ -167,87 +183,96 @@ export default function Dashboard() {
         </div>
       </CardHeader>
       <CardContent className="space-y-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="h-80">
-                <h3 className="text-lg font-semibold mb-2 text-center">pH & EC Over Time</h3>
-                <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={formattedData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                    <YAxis yAxisId="left" domain={[5, 8]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                    <YAxis yAxisId="right" orientation="right" domain={[1, 2.5]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                    <Line yAxisId="left" type="monotone" dataKey="ph_value" name="pH" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} connectNulls />
-                    <Line yAxisId="right" type="monotone" dataKey="ec_value" name="EC (mS/cm)" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} connectNulls/>
-                </LineChart>
-                </ResponsiveContainer>
-            </div>
-            <div className="h-80">
-                <h3 className="text-lg font-semibold mb-2 text-center">Temperature Analysis</h3>
-                <ResponsiveContainer width="100%" height="100%">
+        {filteredData.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="h-80">
+                    <h3 className="text-lg font-semibold mb-2 text-center">pH & EC Over Time</h3>
+                    <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={formattedData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                        <YAxis yAxisId="left" domain={[20, 30]} label={{ value: '°C', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
-                        <YAxis yAxisId="right" orientation="right" domain={[20, 30]} label={{ value: '°C', angle: 90, position: 'insideRight', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
+                        <YAxis yAxisId="left" domain={[5, 8]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                        <YAxis yAxisId="right" orientation="right" domain={[1, 2.5]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
                         <Tooltip content={<CustomTooltip />} />
                         <Legend />
-                        <Line yAxisId="left" type="monotone" dataKey="water_temp" name="Water Temp (°C)" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} connectNulls />
-                        <Line yAxisId="right" type="monotone" dataKey="surround_temp" name="Air Temp (°C)" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} connectNulls />
+                        <Line yAxisId="left" type="monotone" dataKey="ph_value" name="pH" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} connectNulls />
+                        <Line yAxisId="right" type="monotone" dataKey="ec_value" name="EC (mS/cm)" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} connectNulls/>
                     </LineChart>
+                    </ResponsiveContainer>
+                </div>
+                <div className="h-80">
+                    <h3 className="text-lg font-semibold mb-2 text-center">Temperature Analysis</h3>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={formattedData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                            <YAxis yAxisId="left" domain={[20, 30]} label={{ value: '°C', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
+                            <YAxis yAxisId="right" orientation="right" domain={[20, 30]} label={{ value: '°C', angle: 90, position: 'insideRight', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
+                            <Tooltip content={<CustomTooltip />} />
+                            <Legend />
+                            <Line yAxisId="left" type="monotone" dataKey="water_temp" name="Water Temp (°C)" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} connectNulls />
+                            <Line yAxisId="right" type="monotone" dataKey="surround_temp" name="Air Temp (°C)" stroke="hsl(var(--chart-2))" strokeWidth={2} dot={false} connectNulls />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+            <div className="h-80">
+                <h3 className="text-lg font-semibold mb-2 text-center">Humidity</h3>
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={formattedData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                        <YAxis domain={[50, 100]} label={{ value: '%', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
+                        <Tooltip content={<CustomTooltip />} />
+                        <Legend />
+                        <Bar dataKey="humidity" name="Humidity (%)" fill="hsl(var(--chart-3))" />
+                    </BarChart>
                 </ResponsiveContainer>
             </div>
-        </div>
-        <div className="h-80">
-            <h3 className="text-lg font-semibold mb-2 text-center">Humidity</h3>
-            <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={formattedData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                    <YAxis domain={[50, 100]} label={{ value: '%', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                    <Bar dataKey="humidity" name="Humidity (%)" fill="hsl(var(--chart-3))" />
-                </BarChart>
-            </ResponsiveContainer>
-        </div>
 
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Data Log</h3>
-          <div className="max-h-96 overflow-auto border rounded-md">
-            <Table>
-              <TableHeader className="sticky top-0 bg-card">
-                <TableRow>
-                  <TableHead>Timestamp</TableHead>
-                  <TableHead className="text-right">pH</TableHead>
-                  <TableHead className="text-right">EC (mS/cm)</TableHead>
-                  <TableHead className="text-right">Water Temp (°C)</TableHead>
-                  <TableHead className="text-right">Air Temp (°C)</TableHead>
-                  <TableHead className="text-right">Humidity (%)</TableHead>
-                  <TableHead className="text-right">Lux</TableHead>
-                  <TableHead>Water Level</TableHead>
-                  <TableHead>Dosing Pump</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {formattedData.slice().reverse().map(row => (
-                  <TableRow key={row.timestamp}>
-                    <TableCell>{isClient ? format(parseDate(row.timestamp), 'yyyy-MM-dd HH:mm:ss') : ''}</TableCell>
-                    <TableCell className="text-right">{row.ph_value !== null ? row.ph_value.toFixed(2) : 'N/A'}</TableCell>
-                    <TableCell className="text-right">{row.ec_value !== null ? row.ec_value.toFixed(2) : 'N/A'}</TableCell>
-                    <TableCell className="text-right">{row.water_temp !== null ? row.water_temp.toFixed(1) : 'N/A'}</TableCell>
-                    <TableCell className="text-right">{row.surround_temp !== null ? row.surround_temp.toFixed(1) : 'N/A'}</TableCell>
-                    <TableCell className="text-right">{row.humidity !== null ? row.humidity.toFixed(1) : 'N/A'}</TableCell>
-                    <TableCell className="text-right">{row.lux_value !== null ? row.lux_value : 'N/A'}</TableCell>
-                    <TableCell>{row.water_level}</TableCell>
-                    <TableCell>{row.dosing_pump}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Data Log</h3>
+              <div className="max-h-96 overflow-auto border rounded-md">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-card">
+                    <TableRow>
+                      <TableHead>Timestamp</TableHead>
+                      <TableHead className="text-right">pH</TableHead>
+                      <TableHead className="text-right">EC (mS/cm)</TableHead>
+                      <TableHead className="text-right">Water Temp (°C)</TableHead>
+                      <TableHead className="text-right">Air Temp (°C)</TableHead>
+                      <TableHead className="text-right">Humidity (%)</TableHead>
+                      <TableHead className="text-right">Lux</TableHead>
+                      <TableHead>Water Level</TableHead>
+                      <TableHead>Dosing Pump</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {formattedData.slice().reverse().map(row => (
+                      <TableRow key={row.timestamp}>
+                        <TableCell>{isClient ? format(parseDate(row.timestamp), 'yyyy-MM-dd HH:mm:ss') : ''}</TableCell>
+                        <TableCell className="text-right">{row.ph_value !== null ? row.ph_value.toFixed(2) : 'N/A'}</TableCell>
+                        <TableCell className="text-right">{row.ec_value !== null ? row.ec_value.toFixed(2) : 'N/A'}</TableCell>
+                        <TableCell className="text-right">{row.water_temp !== null ? row.water_temp.toFixed(1) : 'N/A'}</TableCell>
+                        <TableCell className="text-right">{row.surround_temp !== null ? row.surround_temp.toFixed(1) : 'N/A'}</TableCell>
+                        <TableCell className="text-right">{row.humidity !== null ? row.humidity.toFixed(1) : 'N/A'}</TableCell>
+                        <TableCell className="text-right">{row.lux_value !== null ? row.lux_value : 'N/A'}</TableCell>
+                        <TableCell>{row.water_level}</TableCell>
+                        <TableCell>{row.dosing_pump}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-16 text-muted-foreground">
+              <p>No data to display for the selected period.</p>
+              <p className="text-sm">Try selecting "All Time" to see the full dataset.</p>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );
