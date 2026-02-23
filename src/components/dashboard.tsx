@@ -28,12 +28,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Download, Calendar as CalendarIcon } from 'lucide-react';
 import hydroponicsData from '@/app/data/hydroponics-data-nov-to-feb.json';
-import { format, parse, isAfter, isBefore, addMinutes, subDays } from 'date-fns';
+import { format, parse, isAfter, isBefore, addMinutes, subDays, startOfDay, endOfDay } from 'date-fns';
 import { cn } from "@/lib/utils"
 import { DateRange } from 'react-day-picker';
 
 type DataRecord = {
   timestamp: string;
+  date: Date;
   ec_value: number | null;
   ph_value: number | null;
   water_temp: number | null;
@@ -80,24 +81,20 @@ const data: DataRecord[] = allDataRaw
       dosing_pump: d.dosing_pump
     };
   })
-  .filter((d): d is Exclude<typeof d, null> & { date: Date } => d !== null)
-  .sort((a, b) => a.date.getTime() - b.date.getTime())
-  .map(({ date, ...rest }) => rest as DataRecord);
+  .filter((d): d is DataRecord => d !== null)
+  .sort((a, b) => a.date.getTime() - b.date.getTime());
 
-const latestDate = data.length > 0 ? parseDate(data[data.length - 1].timestamp)! : new Date();
-const earliestDate = data.length > 0 ? parseDate(data[0].timestamp)! : new Date();
-
-const defaultInitialDateRange: DateRange = {
-  from: subDays(latestDate, 7),
-  to: latestDate,
-};
-
+const earliestDate = data.length > 0 ? data[0].date : new Date();
+const latestDate = data.length > 0 ? data[data.length - 1].date : new Date();
 
 export default function Dashboard() {
   const [isClient, setIsClient] = useState(false);
   
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultInitialDateRange);
-  const [draftDateRange, setDraftDateRange] = useState<DateRange | undefined>(defaultInitialDateRange);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(latestDate, 7),
+    to: latestDate,
+  });
+  const [draftDateRange, setDraftDateRange] = useState<DateRange | undefined>(dateRange);
   const [isDatePopoverOpen, setIsDatePopoverOpen] = useState(false);
 
   const [resolution, setResolution] = useState('1h');
@@ -110,6 +107,11 @@ export default function Dashboard() {
     setIsClient(true);
   }, []);
 
+  const handleDateApply = () => {
+    setDateRange(draftDateRange);
+    setIsDatePopoverOpen(false);
+  };
+  
   const availableDates = useMemo(() => {
     return Object.keys(hydroponicsData).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
   }, []);
@@ -129,47 +131,42 @@ export default function Dashboard() {
   const downsampledData = useMemo(() => {
     if (!dateRange || !dateRange.from) return [];
 
-    const fromDate = new Date(dateRange.from);
-    fromDate.setHours(0, 0, 0, 0);
-
-    const toDate = dateRange.to ? new Date(dateRange.to) : new Date(dateRange.from);
-    toDate.setHours(23, 59, 59, 999);
+    const fromDate = startOfDay(dateRange.from);
+    const toDate = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
 
     const rangeData = data.filter(d => {
-        const date = parseDate(d.timestamp);
-        if (!date) return false;
-        const time = date.getTime();
+        const time = d.date.getTime();
         return time >= fromDate.getTime() && time <= toDate.getTime();
     });
 
     if (rangeData.length === 0) return [];
     
-    const result: DataRecord[] = [];
+    const result: Omit<DataRecord, 'date'>[] = [];
     let currentTime = fromDate;
 
     while (currentTime.getTime() <= toDate.getTime()) {
       const intervalEnd = addMinutes(currentTime, resolutionInMinutes);
       
       const pointsInInterval = rangeData.filter(p => {
-          const pDate = parseDate(p.timestamp)!;
-          return pDate.getTime() >= currentTime.getTime() && pDate.getTime() < intervalEnd.getTime();
+          return p.date.getTime() >= currentTime.getTime() && p.date.getTime() < intervalEnd.getTime();
       });
 
       if(pointsInInterval.length > 0) {
         const closestPoint = pointsInInterval.reduce((prev, curr) => {
-            const prevDiff = Math.abs(parseDate(prev.timestamp)!.getTime() - currentTime.getTime());
-            const currDiff = Math.abs(parseDate(curr.timestamp)!.getTime() - currentTime.getTime());
+            const prevDiff = Math.abs(prev.date.getTime() - currentTime.getTime());
+            const currDiff = Math.abs(curr.date.getTime() - currentTime.getTime());
             return currDiff < prevDiff ? curr : prev;
         });
-        if (!result.find(r => r.timestamp === closestPoint.timestamp)) {
-           result.push(closestPoint);
+        const {date, ...rest} = closestPoint;
+        if (!result.find(r => r.timestamp === rest.timestamp)) {
+           result.push(rest);
         }
       }
       
       currentTime = intervalEnd;
     }
     
-    return result.sort((a, b) => parseDate(a.timestamp)!.getTime() - parseDate(b.timestamp)!.getTime());
+    return result;
 
   }, [dateRange, resolutionInMinutes]);
 
@@ -185,14 +182,18 @@ export default function Dashboard() {
   const tableData = useMemo(() => {
     setCurrentPage(1);
     
-    const sortedData = [...data].sort((a, b) => parseDate(b.timestamp)!.getTime() - parseDate(a.timestamp)!.getTime());
+    const sortedData = [...data].sort((a, b) => b.date.getTime() - a.date.getTime());
     
     if (selectedTableDate === 'all') {
         return sortedData;
     }
+    const selectedDayStart = startOfDay(new Date(selectedTableDate));
+    const selectedDayEnd = endOfDay(new Date(selectedTableDate));
 
-    const normalizedSelectedDate = selectedTableDate.replace(/-/g, '/');
-    return sortedData.filter(d => d.timestamp.startsWith(normalizedSelectedDate));
+    return sortedData.filter(d => {
+        const itemDate = d.date;
+        return itemDate >= selectedDayStart && itemDate <= selectedDayEnd;
+    });
   }, [selectedTableDate]);
 
   const totalPages = Math.ceil(tableData.length / rowsPerPage);
@@ -204,12 +205,12 @@ export default function Dashboard() {
   }, [tableData, currentPage]);
   
   const downloadCSV = () => {
-    const headers: (keyof DataRecord)[] = ['timestamp', 'ph_value', 'ec_value', 'water_temp', 'surround_temp', 'humidity', 'lux_value', 'water_level', 'dosing_pump'];
+    const headers: (keyof Omit<DataRecord, 'date'>)[] = ['timestamp', 'ph_value', 'ec_value', 'water_temp', 'surround_temp', 'humidity', 'lux_value', 'water_level', 'dosing_pump'];
     let csvContent = 'data:text/csv;charset=utf-8,' + headers.join(',') + '\n';
     
     csvContent += tableData
       .map(row => headers.map(header => {
-        const val = row[header];
+        const val = row[header as keyof typeof row];
         if(val === null || val === undefined) return 'N/A';
         return val;
       }).join(','))
@@ -238,16 +239,14 @@ export default function Dashboard() {
     return null;
   };
 
-  const yAxisDomain = (dataKey: keyof Omit<DataRecord, 'timestamp' | 'water_level' | 'dosing_pump'>) => {
+  const yAxisDomain = (dataKey: keyof Omit<DataRecord, 'timestamp' | 'date' | 'water_level' | 'dosing_pump'>) => {
     if (formattedDataForCharts.length === 0) return ['auto', 'auto'];
     const values = formattedDataForCharts.map(d => d[dataKey]).filter(v => v !== null) as number[];
     if (values.length === 0) return ['auto', 'auto'];
     const min = Math.min(...values);
     const max = Math.max(...values);
     const padding = (max - min) * 0.2 || 1;
-    const finalMin = Math.max(0, Math.floor(min - padding));
-    const finalMax = Math.ceil(max + padding);
-    return [finalMin, finalMax];
+    return [Math.max(0, Math.floor(min - padding)), Math.ceil(max + padding)];
   };
 
   return (
@@ -264,30 +263,25 @@ export default function Dashboard() {
             </CardDescription>
           </div>
            <div className="flex flex-wrap items-center gap-2">
-            <Popover open={isDatePopoverOpen} onOpenChange={(open) => {
-              if (open) {
-                setDraftDateRange(dateRange);
-              }
-              setIsDatePopoverOpen(open);
-            }}>
+            <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
                   id="date"
                   variant={"outline"}
                   className={cn(
                     "w-[280px] justify-start text-left font-normal",
-                    !dateRange && "text-muted-foreground"
+                    !draftDateRange && "text-muted-foreground"
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {isClient && dateRange?.from ? (
-                    dateRange.to ? (
+                  {isClient && draftDateRange?.from ? (
+                    draftDateRange.to ? (
                       <>
-                        {format(dateRange.from, "LLL dd, y")} -{" "}
-                        {format(dateRange.to, "LLL dd, y")}
+                        {format(draftDateRange.from, "LLL dd, y")} -{" "}
+                        {format(draftDateRange.to, "LLL dd, y")}
                       </>
                     ) : (
-                      format(dateRange.from, "LLL dd, y")
+                      format(draftDateRange.from, "LLL dd, y")
                     )
                   ) : (
                     <span>Pick a date range</span>
@@ -306,18 +300,8 @@ export default function Dashboard() {
                     isBefore(date, earliestDate) || isAfter(date, latestDate)
                   }
                 />
-                <div className="p-4 pt-2">
-                  <Button
-                      className="w-full"
-                      onClick={() => {
-                        if (draftDateRange) {
-                          setDateRange(draftDateRange);
-                        }
-                        setIsDatePopoverOpen(false);
-                      }}
-                  >
-                      Confirm
-                  </Button>
+                <div className="p-4 border-t">
+                  <Button className="w-full" onClick={handleDateApply}>Confirm</Button>
                 </div>
               </PopoverContent>
             </Popover>
@@ -425,7 +409,7 @@ export default function Dashboard() {
                   <TableBody>
                     {paginatedData.map(row => (
                       <TableRow key={row.timestamp}>
-                        <TableCell>{isClient ? format(parseDate(row.timestamp)!, 'yyyy-MM-dd HH:mm:ss') : ''}</TableCell>
+                        <TableCell>{isClient ? format(row.date, 'yyyy-MM-dd HH:mm:ss') : ''}</TableCell>
                         <TableCell className="text-right">{typeof row.ph_value === 'number' ? row.ph_value.toFixed(2) : 'N/A'}</TableCell>
                         <TableCell className="text-right">{typeof row.ec_value === 'number' ? row.ec_value.toFixed(2) : 'N/A'}</TableCell>
                         <TableCell className="text-right">{typeof row.water_temp === 'number' ? row.water_temp.toFixed(1) : 'N/A'}</TableCell>
