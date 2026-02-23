@@ -24,13 +24,9 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { Download, Calendar as CalendarIcon } from 'lucide-react';
+import { Download } from 'lucide-react';
 import hydroponicsData from '@/app/data/hydroponics-data-nov-to-feb.json';
-import { format, parse, isAfter, isBefore, addMinutes, subDays, startOfDay, endOfDay } from 'date-fns';
-import { cn } from "@/lib/utils"
-import { DateRange } from 'react-day-picker';
+import { format, parse, isAfter, isBefore, addMinutes, startOfDay, endOfDay } from 'date-fns';
 
 type DataRecord = {
   timestamp: string;
@@ -83,19 +79,19 @@ const data: DataRecord[] = allDataRaw
   })
   .filter((d): d is DataRecord => d !== null)
   .sort((a, b) => a.date.getTime() - b.date.getTime());
+  
+const availableDates = Object.keys(hydroponicsData).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+const latestDate = availableDates[0];
+const defaultFromDate = availableDates.length > 7 ? availableDates[6] : availableDates[availableDates.length - 1];
 
-const earliestDate = data.length > 0 ? data[0].date : new Date();
-const latestDate = data.length > 0 ? data[data.length - 1].date : new Date();
 
 export default function Dashboard() {
   const [isClient, setIsClient] = useState(false);
   
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: subDays(latestDate, 7),
+  const [dateRange, setDateRange] = useState({
+    from: defaultFromDate,
     to: latestDate,
   });
-  const [draftDateRange, setDraftDateRange] = useState<DateRange | undefined>(dateRange);
-  const [isDatePopoverOpen, setIsDatePopoverOpen] = useState(false);
 
   const [resolution, setResolution] = useState('1h');
 
@@ -106,16 +102,7 @@ export default function Dashboard() {
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  const handleDateApply = () => {
-    setDateRange(draftDateRange);
-    setIsDatePopoverOpen(false);
-  };
   
-  const availableDates = useMemo(() => {
-    return Object.keys(hydroponicsData).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-  }, []);
-
   const resolutionInMinutes = useMemo(() => {
     switch(resolution) {
       case '30m': return 30;
@@ -129,10 +116,10 @@ export default function Dashboard() {
   }, [resolution]);
 
   const downsampledData = useMemo(() => {
-    if (!dateRange || !dateRange.from) return [];
+    if (!dateRange.from || !dateRange.to) return [];
 
-    const fromDate = startOfDay(dateRange.from);
-    const toDate = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from);
+    const fromDate = startOfDay(new Date(dateRange.from));
+    const toDate = endOfDay(new Date(dateRange.to));
 
     const rangeData = data.filter(d => {
         const time = d.date.getTime();
@@ -249,6 +236,16 @@ export default function Dashboard() {
     return [Math.max(0, Math.floor(min - padding)), Math.ceil(max + padding)];
   };
 
+  const fromDates = useMemo(() => {
+    return Object.keys(hydroponicsData).sort((a,b) => new Date(a).getTime() - new Date(b).getTime());
+  }, []);
+
+  const toDates = useMemo(() => {
+    const fromDate = new Date(dateRange.from);
+    return Object.keys(hydroponicsData).filter(date => isAfter(new Date(date), fromDate) || date === dateRange.from).sort((a,b) => new Date(a).getTime() - new Date(b).getTime());
+  }, [dateRange.from]);
+  
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -257,54 +254,46 @@ export default function Dashboard() {
             <CardTitle>System Analytics</CardTitle>
             <CardDescription>
               Showing data
-              {isClient && dateRange?.from ? ` from ${format(dateRange.from, "LLL dd, y")}` : ''}
-              {isClient && dateRange?.to ? ` to ${format(dateRange.to, "LLL dd, y")}` : ``}
+              {isClient && dateRange?.from ? ` from ${dateRange.from}` : ''}
+              {isClient && dateRange?.to ? ` to ${dateRange.to}` : ``}
               . Resolution: {resolution}.
             </CardDescription>
           </div>
            <div className="flex flex-wrap items-center gap-2">
-            <Popover open={isDatePopoverOpen} onOpenChange={setIsDatePopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  id="date"
-                  variant={"outline"}
-                  className={cn(
-                    "w-[280px] justify-start text-left font-normal",
-                    !draftDateRange && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {isClient && draftDateRange?.from ? (
-                    draftDateRange.to ? (
-                      <>
-                        {format(draftDateRange.from, "LLL dd, y")} -{" "}
-                        {format(draftDateRange.to, "LLL dd, y")}
-                      </>
-                    ) : (
-                      format(draftDateRange.from, "LLL dd, y")
-                    )
-                  ) : (
-                    <span>Pick a date range</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  initialFocus
-                  mode="range"
-                  defaultMonth={draftDateRange?.from || latestDate}
-                  selected={draftDateRange}
-                  onSelect={setDraftDateRange}
-                  numberOfMonths={1}
-                  disabled={(date) =>
-                    isBefore(date, earliestDate) || isAfter(date, latestDate)
-                  }
-                />
-                <div className="p-4 border-t">
-                  <Button className="w-full" onClick={handleDateApply}>Confirm</Button>
-                </div>
-              </PopoverContent>
-            </Popover>
+            <Select
+              value={dateRange.from}
+              onValueChange={(value) => {
+                if (isAfter(new Date(value), new Date(dateRange.to))) {
+                  setDateRange({ from: value, to: value });
+                } else {
+                  setDateRange((prev) => ({ ...prev, from: value }));
+                }
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="From" />
+              </SelectTrigger>
+              <SelectContent>
+                {fromDates.map(date => (
+                  <SelectItem key={date} value={date}>{date}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={dateRange.to}
+              onValueChange={(value) => {
+                setDateRange((prev) => ({ ...prev, to: value }));
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="To" />
+              </SelectTrigger>
+              <SelectContent>
+                {toDates.map(date => (
+                  <SelectItem key={date} value={date}>{date}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Select value={resolution} onValueChange={setResolution}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Resolution" />
@@ -326,7 +315,7 @@ export default function Dashboard() {
           <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="h-80">
-                    <h3 className="text-lg font-semibold mb-2 text-center">pH & EC Over Time</h3>
+                    <h3 className="text-lg font-semibold mb-2 text-center">pH &amp; EC Over Time</h3>
                     <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={formattedDataForCharts}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -455,3 +444,5 @@ export default function Dashboard() {
     </Card>
   );
 }
+
+    
