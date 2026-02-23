@@ -81,11 +81,14 @@ const earliestDate = data.length > 0 ? parseDate(data[0].timestamp)! : new Date(
 export default function Dashboard() {
   const [isClient, setIsClient] = useState(false);
   
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined, to: Date | undefined }>({
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: subDays(latestDate, 7),
     to: latestDate,
   });
-  const [draftDateRange, setDraftDateRange] = useState(dateRange);
+  const [draftDateRange, setDraftDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: subDays(latestDate, 7),
+    to: latestDate,
+  });
   const [isDatePopoverOpen, setIsDatePopoverOpen] = useState(false);
 
 
@@ -116,7 +119,7 @@ export default function Dashboard() {
   }, [resolution]);
 
   const downsampledData = useMemo(() => {
-    if (!dateRange.from) return [];
+    if (!dateRange || !dateRange.from) return [];
 
     const fromDate = new Date(dateRange.from);
     fromDate.setHours(0, 0, 0, 0);
@@ -247,8 +250,8 @@ export default function Dashboard() {
             <CardTitle>System Analytics</CardTitle>
             <CardDescription>
               Showing data
-              {isClient && dateRange.from ? ` from ${format(dateRange.from, "LLL dd, y")}` : ''}
-              {isClient && dateRange.to ? ` to ${format(dateRange.to, "LLL dd, y")}` : ` to ${isClient && dateRange.from ? format(dateRange.from, "LLL dd, y") : ''}`}
+              {isClient && dateRange?.from ? ` from ${format(dateRange.from, "LLL dd, y")}` : ''}
+              {isClient && dateRange?.to ? ` to ${format(dateRange.to, "LLL dd, y")}` : ``}
               . Resolution: {resolution}.
             </CardDescription>
           </div>
@@ -283,13 +286,13 @@ export default function Dashboard() {
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto" align="start">
+              <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   initialFocus
                   mode="range"
                   defaultMonth={draftDateRange?.from || latestDate}
                   selected={draftDateRange}
-                  onSelect={setDraftDateRange}
+                  onSelect={(range) => setDraftDateRange(range || undefined)}
                   numberOfMonths={1}
                   disabled={(date) =>
                     isBefore(date, earliestDate) || isAfter(date, latestDate)
