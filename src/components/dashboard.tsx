@@ -44,34 +44,33 @@ const parseDate = (timestamp: string): Date => {
   return parse(timestamp, 'yyyy/MM/dd HH:mm:ss', new Date());
 };
 
-// 1. Flatten the nested JSON structure.
-// 2. Parse timestamps into Date objects, filtering out any invalid records.
-// 3. Sort the data chronologically.
 const data: DataRecord[] = Object.values(hydroponicsData)
   .flatMap(dayData => Object.values(dayData))
   .map((d: any) => {
-    const date = parseDate(d.timestamp);
-    return {
-      date, // temporary field for sorting
-      data: {
-        timestamp: d.timestamp,
-        ec_value: d.ec_value === 'N/A' ? null : Number(d.ec_value),
-        ph_value: d.ph_value === 'N/A' || d.ph_value === 'N/á' ? null : Number(d.ph_value),
-        water_temp: d.water_temp === 'N/A' ? null : Number(d.water_temp),
-        lux_value: d.lux_value === 'N/A' ? null : Number(d.lux_value),
-        humidity: d.humidity === 'N/A' ? null : Number(d.humidity),
-        surround_temp: d.surround_temp === 'N/A' ? null : Number(d.surround_temp),
-        water_level: d.water_level,
-        dosing_pump: d.dosing_pump,
-      } as DataRecord
+    try {
+      const date = parseDate(d.timestamp);
+      return {
+        date,
+        data: {
+          timestamp: d.timestamp,
+          ec_value: d.ec_value === 'N/A' ? null : Number(d.ec_value),
+          ph_value: d.ph_value === 'N/A' || d.ph_value === 'N/á' ? null : Number(d.ph_value),
+          water_temp: d.water_temp === 'N/A' ? null : Number(d.water_temp),
+          lux_value: d.lux_value === 'N/A' ? null : Number(d.lux_value),
+          humidity: d.humidity === 'N/A' ? null : Number(d.humidity),
+          surround_temp: d.surround_temp === 'N/A' ? null : Number(d.surround_temp),
+          water_level: d.water_level,
+          dosing_pump: d.dosing_pump,
+        } as DataRecord
+      };
+    } catch (e) {
+      return null;
     }
   })
-  .filter(item => item.date instanceof Date && !isNaN(item.date.getTime()))
+  .filter((item): item is { date: Date; data: DataRecord } => item !== null && item.date instanceof Date && !isNaN(item.date.getTime()))
   .sort((a, b) => a.date.getTime() - b.date.getTime())
-  .map(item => item.data); // Map back to the original DataRecord structure
+  .map(item => item.data);
 
-
-// The latest date is now simply the last entry in the sorted data array.
 const latestDate = data.length > 0 ? parseDate(data[data.length - 1].timestamp) : new Date();
 
 
@@ -79,7 +78,6 @@ export default function Dashboard() {
   const [filter, setFilter] = useState<string>('7d');
   const [isClient, setIsClient] = useState(false);
   
-  // State for table data filtering and pagination
   const [selectedDate, setSelectedDate] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 50;
@@ -89,40 +87,29 @@ export default function Dashboard() {
   }, []);
 
   const availableDates = useMemo(() => {
-    // Sort dates in descending order (most recent first)
     return Object.keys(hydroponicsData).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
   }, []);
 
-  // Filtering for charts
   const filteredDataForCharts = useMemo(() => {
     if (!data || data.length === 0) return [];
     
     const now = latestDate;
 
-    if (filter === 'all') {
-      return data;
-    }
-
     let startDate: Date;
     switch (filter) {
       case '24h':
         startDate = subHours(now, 24);
-        break;
+        return data.filter(d => isAfter(parseDate(d.timestamp), startDate));
       case '7d':
         startDate = subDays(now, 7);
-        break;
+        return data.filter(d => isAfter(parseDate(d.timestamp), startDate));
       case '30d':
         startDate = subDays(now, 30);
-        break;
+        return data.filter(d => isAfter(parseDate(d.timestamp), startDate));
       default:
-        return data;
+        const normalizedDate = filter.replace(/-/g, '/');
+        return data.filter(d => d.timestamp.startsWith(normalizedDate));
     }
-    
-    return data.filter(d => {
-        const dDate = parseDate(d.timestamp);
-        return dDate instanceof Date && !isNaN(dDate.getTime()) && isAfter(dDate, startDate);
-    });
-
   }, [filter]);
 
   const formattedDataForCharts = useMemo(() => {
@@ -133,15 +120,12 @@ export default function Dashboard() {
   }, [filteredDataForCharts, isClient]);
 
   
-  // Filtering and pagination for the table
   const tableData = useMemo(() => {
-    setCurrentPage(1); // Reset page when filter changes
+    setCurrentPage(1);
     const reversed = data.slice().reverse();
     if (selectedDate === 'all') {
         return reversed;
     }
-    // The date keys in the JSON are YYYY-MM-DD, but timestamps are YYYY/MM/DD.
-    // So we need to convert one to match the other.
     const normalizedSelectedDate = selectedDate.replace(/-/g, '/');
     return reversed.filter(d => d.timestamp.startsWith(normalizedSelectedDate));
   }, [selectedDate]);
@@ -158,14 +142,13 @@ export default function Dashboard() {
     '24h': 'the last 24 hours of data',
     '7d': 'the last 7 days of data',
     '30d': 'the last 30 days of data',
-    all: 'all time',
   };
 
   const downloadCSV = () => {
     const headers: (keyof DataRecord)[] = ['timestamp', 'ph_value', 'ec_value', 'water_temp', 'surround_temp', 'humidity', 'lux_value', 'water_level', 'dosing_pump'];
     let csvContent = 'data:text/csv;charset=utf-8,' + headers.join(',') + '\n';
     
-    csvContent += tableData // download data from table
+    csvContent += tableData
       .map(row => headers.map(header => {
         const val = row[header];
         if(val === null || val === undefined) return 'N/A';
@@ -212,7 +195,7 @@ export default function Dashboard() {
           <div>
             <CardTitle>System Analytics</CardTitle>
             <CardDescription>
-              Showing charts for {filterLabels[filter]}.
+              Showing charts for {filterLabels[filter] || `data for ${filter}`}.
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -224,7 +207,9 @@ export default function Dashboard() {
                 <SelectItem value="24h">Last 24 Hours</SelectItem>
                 <SelectItem value="7d">Last 7 Days</SelectItem>
                 <SelectItem value="30d">Last 30 Days</SelectItem>
-                <SelectItem value="all">All Time</SelectItem>
+                {availableDates.map(date => (
+                  <SelectItem key={date} value={date}>{date}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
