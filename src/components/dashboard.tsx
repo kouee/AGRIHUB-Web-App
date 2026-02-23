@@ -25,8 +25,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Download } from 'lucide-react';
-import hydroponicsData from '@/app/data/hydroponics-data.json';
-import { format, subHours, subDays, isAfter } from 'date-fns';
+import hydroponicsData from '@/app/data/hydroponics-data-nov-to-feb.json';
+import { format, subHours, subDays, isAfter, parse } from 'date-fns';
 
 type DataRecord = {
   timestamp: string;
@@ -40,19 +40,20 @@ type DataRecord = {
   dosing_pump: string;
 };
 
-const parseDate = (timestamp: string) => new Date(timestamp.replace(' ', 'T'));
+// This function now flattens the nested JSON structure
+const data: DataRecord[] = Object.values(hydroponicsData).flatMap(dayData => Object.values(dayData)).map((d: any) => ({
+    timestamp: d.timestamp,
+    ec_value: d.ec_value === 'N/A' ? null : Number(d.ec_value),
+    ph_value: d.ph_value === 'N/A' || d.ph_value === 'N/á' ? null : Number(d.ph_value),
+    water_temp: d.water_temp === 'N/A' ? null : Number(d.water_temp),
+    lux_value: d.lux_value === 'N/A' ? null : Number(d.lux_value),
+    humidity: d.humidity === 'N/A' ? null : Number(d.humidity),
+    surround_temp: d.surround_temp === 'N/A' ? null : Number(d.surround_temp),
+    water_level: d.water_level,
+    dosing_pump: d.dosing_pump,
+  }));
 
-const data: DataRecord[] = (hydroponicsData as any[]).map(d => ({
-  timestamp: d.timestamp,
-  ec_value: d.ec_value === 'N/A' ? null : Number(d.ec_value),
-  ph_value: d.ph_value === 'N/A' || d.ph_value === 'N/á' ? null : Number(d.ph_value),
-  water_temp: d.water_temp === 'N/A' ? null : Number(d.water_temp),
-  lux_value: d.lux_value === 'N/A' ? null : Number(d.lux_value),
-  humidity: d.humidity === 'N/A' ? null : Number(d.humidity),
-  surround_temp: d.surround_temp === 'N/A' ? null : Number(d.surround_temp),
-  water_level: d.water_level,
-  dosing_pump: d.dosing_pump,
-}));
+const parseDate = (timestamp: string) => parse(timestamp, 'yyyy/MM/dd HH:mm:ss', new Date());
 
 const validDates = data
   .map(d => parseDate(d.timestamp))
@@ -66,6 +67,9 @@ const latestDate = validDates.length > 0
 export default function Dashboard() {
   const [filter, setFilter] = useState<string>('7d');
   const [isClient, setIsClient] = useState(false);
+  
+  // State for table data filtering and pagination
+  const [selectedDate, setSelectedDate] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 50;
 
@@ -73,14 +77,13 @@ export default function Dashboard() {
     setIsClient(true);
   }, []);
 
-  const filteredData = useMemo(() => {
+  const availableDates = useMemo(() => Object.keys(hydroponicsData), []);
+
+  // Filtering for charts
+  const filteredDataForCharts = useMemo(() => {
     if (!data || data.length === 0) return [];
     
-    // Use the latest date from the data as the reference 'now'
     const now = latestDate;
-
-    // Reset to page 1 whenever the filter changes
-    setCurrentPage(1);
 
     if (filter === 'all') {
       return data;
@@ -108,24 +111,31 @@ export default function Dashboard() {
 
   }, [filter]);
 
-  const formattedData = useMemo(() => {
-    return filteredData.map(d => ({
+  const formattedDataForCharts = useMemo(() => {
+    return filteredDataForCharts.map(d => ({
       ...d,
       formattedTimestamp: isClient ? format(parseDate(d.timestamp), 'MMM d, HH:mm') : '',
     }));
-  }, [filteredData, isClient]);
+  }, [filteredDataForCharts, isClient]);
 
-  const reversedData = useMemo(() => {
-    return formattedData.slice().reverse();
-  }, [formattedData]);
+  
+  // Filtering and pagination for the table
+  const tableData = useMemo(() => {
+    setCurrentPage(1); // Reset page when filter changes
+    const reversed = data.slice().reverse();
+    if (selectedDate === 'all') {
+        return reversed;
+    }
+    return reversed.filter(d => d.timestamp.startsWith(selectedDate.replace(/-/g, '/')));
+  }, [data, selectedDate]);
 
-  const totalPages = Math.ceil(reversedData.length / rowsPerPage);
+  const totalPages = Math.ceil(tableData.length / rowsPerPage);
 
   const paginatedData = useMemo(() => {
-      const startIndex = (currentPage - 1) * rowsPerPage;
-      const endIndex = startIndex + rowsPerPage;
-      return reversedData.slice(startIndex, endIndex);
-  }, [reversedData, currentPage]);
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    return tableData.slice(startIndex, endIndex);
+  }, [tableData, currentPage]);
   
   const filterLabels: { [key: string]: string } = {
     '24h': 'the last 24 hours of data',
@@ -138,7 +148,7 @@ export default function Dashboard() {
     const headers: (keyof DataRecord)[] = ['timestamp', 'ph_value', 'ec_value', 'water_temp', 'surround_temp', 'humidity', 'lux_value', 'water_level', 'dosing_pump'];
     let csvContent = 'data:text/csv;charset=utf-8,' + headers.join(',') + '\n';
     
-    csvContent += filteredData
+    csvContent += tableData // download data from table
       .map(row => headers.map(header => {
         const val = row[header];
         if(val === null || val === undefined) return 'N/A';
@@ -149,7 +159,7 @@ export default function Dashboard() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', 'agrihub_data.csv');
+    link.setAttribute('download', `agrihub_data_${selectedDate}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -169,6 +179,14 @@ export default function Dashboard() {
     return null;
   };
 
+  const yAxisDomain = (dataKey: keyof Omit<DataRecord, 'timestamp' | 'water_level' | 'dosing_pump'>) => {
+    const values = filteredDataForCharts.map(d => d[dataKey]).filter(v => v !== null) as number[];
+    if (values.length === 0) return ['auto', 'auto'];
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const padding = (max - min) * 0.1 || 1;
+    return [Math.floor(min - padding), Math.ceil(max + padding)];
+  };
 
   return (
     <Card className="w-full">
@@ -177,7 +195,7 @@ export default function Dashboard() {
           <div>
             <CardTitle>System Analytics</CardTitle>
             <CardDescription>
-              Viewing data for {filterLabels[filter]}.
+              Showing charts for {filterLabels[filter]}.
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -192,25 +210,21 @@ export default function Dashboard() {
                 <SelectItem value="all">All Time</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="icon" onClick={downloadCSV}>
-              <Download className="h-4 w-4" />
-              <span className="sr-only">Download CSV</span>
-            </Button>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-8">
-        {filteredData.length > 0 ? (
+        {formattedDataForCharts.length > 0 ? (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="h-80">
                     <h3 className="text-lg font-semibold mb-2 text-center">pH & EC Over Time</h3>
                     <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={formattedData}>
+                    <LineChart data={formattedDataForCharts}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                        <YAxis yAxisId="left" domain={[3, 9]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                        <YAxis yAxisId="right" orientation="right" domain={[0, 4]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                        <YAxis yAxisId="left" domain={yAxisDomain('ph_value')} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                        <YAxis yAxisId="right" orientation="right" domain={yAxisDomain('ec_value')} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
                         <Tooltip content={<CustomTooltip />} />
                         <Legend />
                         <Line yAxisId="left" type="monotone" dataKey="ph_value" name="pH" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} connectNulls />
@@ -221,11 +235,11 @@ export default function Dashboard() {
                 <div className="h-80">
                     <h3 className="text-lg font-semibold mb-2 text-center">Temperature Analysis</h3>
                     <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={formattedData}>
+                        <LineChart data={formattedDataForCharts}>
                             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                             <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                            <YAxis yAxisId="left" domain={[15, 35]} label={{ value: '°C', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
-                            <YAxis yAxisId="right" orientation="right" domain={[15, 35]} label={{ value: '°C', angle: 90, position: 'insideRight', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
+                            <YAxis yAxisId="left" domain={yAxisDomain('water_temp')} label={{ value: '°C', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
+                            <YAxis yAxisId="right" orientation="right" domain={yAxisDomain('surround_temp')} label={{ value: '°C', angle: 90, position: 'insideRight', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
                             <Tooltip content={<CustomTooltip />} />
                             <Legend />
                             <Line yAxisId="left" type="monotone" dataKey="water_temp" name="Water Temp (°C)" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} connectNulls />
@@ -237,10 +251,10 @@ export default function Dashboard() {
             <div className="h-80">
                 <h3 className="text-lg font-semibold mb-2 text-center">Humidity</h3>
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={formattedData}>
+                    <BarChart data={formattedDataForCharts}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                        <YAxis domain={[40, 100]} label={{ value: '%', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
+                        <YAxis domain={yAxisDomain('humidity')} label={{ value: '%', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
                         <Tooltip content={<CustomTooltip />} />
                         <Legend />
                         <Bar dataKey="humidity" name="Humidity (%)" fill="hsl(var(--chart-3))" />
@@ -249,7 +263,26 @@ export default function Dashboard() {
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold mb-4">Data Log</h3>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                <h3 className="text-lg font-semibold">Data Log</h3>
+                <div className="flex items-center gap-2">
+                  <Select value={selectedDate} onValueChange={setSelectedDate}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Filter by date" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Dates</SelectItem>
+                      {availableDates.map(date => (
+                        <SelectItem key={date} value={date}>{date}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="icon" onClick={downloadCSV}>
+                    <Download className="h-4 w-4" />
+                    <span className="sr-only">Download CSV</span>
+                  </Button>
+                </div>
+              </div>
               <div className="max-h-[600px] overflow-auto border rounded-md">
                 <Table>
                   <TableHeader className="sticky top-0 bg-card">
@@ -308,7 +341,6 @@ export default function Dashboard() {
         ) : (
           <div className="text-center py-16 text-muted-foreground">
               <p>No data to display for the selected period.</p>
-              <p className="text-sm">Try selecting "All Time" to see the full dataset.</p>
           </div>
         )}
       </CardContent>
