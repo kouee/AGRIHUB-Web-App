@@ -24,9 +24,12 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Download } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Download, Calendar as CalendarIcon } from 'lucide-react';
 import hydroponicsData from '@/app/data/hydroponics-data-nov-to-feb.json';
-import { format, subHours, subDays, isAfter, parse } from 'date-fns';
+import { format, parse, isAfter, isBefore, addMinutes, subDays } from 'date-fns';
+import { cn } from "@/lib/utils"
 
 type DataRecord = {
   timestamp: string;
@@ -40,45 +43,52 @@ type DataRecord = {
   dosing_pump: string;
 };
 
-const parseDate = (timestamp: string): Date => {
-  return parse(timestamp, 'yyyy/MM/dd HH:mm:ss', new Date());
+const parseDate = (timestamp: string): Date | null => {
+  let date = parse(timestamp, 'yyyy/MM/dd HH:mm:ss', new Date());
+  if (isNaN(date.getTime())) {
+    date = parse(timestamp, 'yyyy-MM-dd HH:mm:ss', new Date());
+  }
+  return isNaN(date.getTime()) ? null : date;
 };
 
-const data: DataRecord[] = Object.values(hydroponicsData)
-  .flatMap(dayData => Object.values(dayData))
-  .map((d: any) => {
-    try {
-      const date = parseDate(d.timestamp);
-      return {
-        date,
-        data: {
-          timestamp: d.timestamp,
-          ec_value: d.ec_value === 'N/A' ? null : Number(d.ec_value),
-          ph_value: d.ph_value === 'N/A' || d.ph_value === 'N/á' ? null : Number(d.ph_value),
-          water_temp: d.water_temp === 'N/A' ? null : Number(d.water_temp),
-          lux_value: d.lux_value === 'N/A' ? null : Number(d.lux_value),
-          humidity: d.humidity === 'N/A' ? null : Number(d.humidity),
-          surround_temp: d.surround_temp === 'N/A' ? null : Number(d.surround_temp),
-          water_level: d.water_level,
-          dosing_pump: d.dosing_pump,
-        } as DataRecord
-      };
-    } catch (e) {
-      return null;
-    }
-  })
-  .filter((item): item is { date: Date; data: DataRecord } => item !== null && item.date instanceof Date && !isNaN(item.date.getTime()))
-  .sort((a, b) => a.date.getTime() - b.date.getTime())
-  .map(item => item.data);
+const allDataRaw: any[] = Object.values(hydroponicsData).flatMap(dayData => Object.values(dayData));
 
-const latestDate = data.length > 0 ? parseDate(data[data.length - 1].timestamp) : new Date();
+const data: DataRecord[] = allDataRaw
+  .map(d => {
+    const date = parseDate(d.timestamp);
+    if (!date) return null;
+
+    const parsed = {
+      ...d,
+      date: date,
+      ec_value: d.ec_value !== "N/A" && d.ec_value != null ? parseFloat(d.ec_value) : null,
+      ph_value: d.ph_value !== "N/A" && d.ph_value != null ? parseFloat(d.ph_value) : null,
+      water_temp: d.water_temp !== "N/A" && d.water_temp != null ? parseFloat(d.water_temp) : null,
+      lux_value: d.lux_value !== "N/A" && d.lux_value != null ? parseInt(d.lux_value, 10) : null,
+      humidity: d.humidity !== "N/A" && d.humidity != null ? parseFloat(d.humidity) : null,
+      surround_temp: d.surround_temp !== "N/A" && d.surround_temp != null ? parseFloat(d.surround_temp) : null,
+    };
+    return parsed;
+  })
+  .filter((d): d is Exclude<typeof d, null> => d !== null)
+  .sort((a, b) => b.date!.getTime() - a.date!.getTime())
+  .map(({ date, ...rest }) => rest as DataRecord);
+
+const latestDate = data.length > 0 ? parseDate(data[0].timestamp)! : new Date();
+const earliestDate = data.length > 0 ? parseDate(data[data.length - 1].timestamp)! : new Date();
 
 
 export default function Dashboard() {
-  const [filter, setFilter] = useState<string>('7d');
   const [isClient, setIsClient] = useState(false);
   
-  const [selectedDate, setSelectedDate] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined, to: Date | undefined }>({
+    from: subDays(latestDate, 7),
+    to: latestDate,
+  });
+
+  const [resolution, setResolution] = useState('1h');
+
+  const [selectedTableDate, setSelectedTableDate] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 50;
 
@@ -90,45 +100,76 @@ export default function Dashboard() {
     return Object.keys(hydroponicsData).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
   }, []);
 
-  const filteredDataForCharts = useMemo(() => {
-    if (!data || data.length === 0) return [];
-    
-    const now = latestDate;
-
-    let startDate: Date;
-    switch (filter) {
-      case '24h':
-        startDate = subHours(now, 24);
-        return data.filter(d => isAfter(parseDate(d.timestamp), startDate));
-      case '7d':
-        startDate = subDays(now, 7);
-        return data.filter(d => isAfter(parseDate(d.timestamp), startDate));
-      case '30d':
-        startDate = subDays(now, 30);
-        return data.filter(d => isAfter(parseDate(d.timestamp), startDate));
-      default:
-        const normalizedDate = filter.replace(/-/g, '/');
-        return data.filter(d => d.timestamp.startsWith(normalizedDate));
+  const resolutionInMinutes = useMemo(() => {
+    switch(resolution) {
+      case '30m': return 30;
+      case '1h': return 60;
+      case '2h': return 120;
+      case '4h': return 240;
+      case '12h': return 720;
+      case '24h': return 1440;
+      default: return 60;
     }
-  }, [filter]);
+  }, [resolution]);
+
+  const downsampledData = useMemo(() => {
+    if (!dateRange.from || !dateRange.to) return [];
+
+    const rangeData = data.filter(d => {
+        const date = parseDate(d.timestamp);
+        if (!date) return false;
+        return (date.getTime() >= dateRange.from!.getTime() && date.getTime() <= dateRange.to!.getTime());
+    });
+
+    if (rangeData.length === 0) return [];
+    
+    const result: DataRecord[] = [];
+    let currentTime = new Date(dateRange.from.getTime());
+
+    while (currentTime.getTime() <= dateRange.to.getTime()) {
+      const intervalEnd = addMinutes(currentTime, resolutionInMinutes);
+      
+      const pointsInInterval = rangeData.filter(p => {
+          const pDate = parseDate(p.timestamp)!;
+          return pDate.getTime() >= currentTime.getTime() && pDate.getTime() < intervalEnd.getTime();
+      });
+
+      if(pointsInInterval.length > 0) {
+        const closestPoint = pointsInInterval.reduce((prev, curr) => {
+            const prevDiff = Math.abs(parseDate(prev.timestamp)!.getTime() - currentTime.getTime());
+            const currDiff = Math.abs(parseDate(curr.timestamp)!.getTime() - currentTime.getTime());
+            return currDiff < prevDiff ? curr : prev;
+        });
+        if (!result.find(r => r.timestamp === closestPoint.timestamp)) {
+           result.push(closestPoint);
+        }
+      }
+      
+      currentTime = intervalEnd;
+    }
+    
+    return result;
+
+  }, [dateRange, resolutionInMinutes]);
+
 
   const formattedDataForCharts = useMemo(() => {
-    return filteredDataForCharts.map(d => ({
+    return downsampledData.map(d => ({
       ...d,
-      formattedTimestamp: isClient ? format(parseDate(d.timestamp), 'MMM d, HH:mm') : '',
+      formattedTimestamp: isClient ? format(parseDate(d.timestamp)!, 'MMM d, HH:mm') : '',
     }));
-  }, [filteredDataForCharts, isClient]);
+  }, [downsampledData, isClient]);
 
   
   const tableData = useMemo(() => {
     setCurrentPage(1);
-    const reversed = data.slice().reverse();
-    if (selectedDate === 'all') {
-        return reversed;
+    
+    if (selectedTableDate === 'all') {
+        return data;
     }
-    const normalizedSelectedDate = selectedDate.replace(/-/g, '/');
-    return reversed.filter(d => d.timestamp.startsWith(normalizedSelectedDate));
-  }, [selectedDate]);
+    const normalizedSelectedDate = selectedTableDate.replace(/-/g, '/');
+    return data.filter(d => d.timestamp.startsWith(normalizedSelectedDate));
+  }, [selectedTableDate]);
 
   const totalPages = Math.ceil(tableData.length / rowsPerPage);
 
@@ -138,12 +179,6 @@ export default function Dashboard() {
     return tableData.slice(startIndex, endIndex);
   }, [tableData, currentPage]);
   
-  const filterLabels: { [key: string]: string } = {
-    '24h': 'the last 24 hours of data',
-    '7d': 'the last 7 days of data',
-    '30d': 'the last 30 days of data',
-  };
-
   const downloadCSV = () => {
     const headers: (keyof DataRecord)[] = ['timestamp', 'ph_value', 'ec_value', 'water_temp', 'surround_temp', 'humidity', 'lux_value', 'water_level', 'dosing_pump'];
     let csvContent = 'data:text/csv;charset=utf-8,' + headers.join(',') + '\n';
@@ -159,7 +194,7 @@ export default function Dashboard() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `agrihub_data_${selectedDate}.csv`);
+    link.setAttribute('download', `agrihub_data_${selectedTableDate}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -180,12 +215,15 @@ export default function Dashboard() {
   };
 
   const yAxisDomain = (dataKey: keyof Omit<DataRecord, 'timestamp' | 'water_level' | 'dosing_pump'>) => {
-    const values = filteredDataForCharts.map(d => d[dataKey]).filter(v => v !== null) as number[];
+    if (formattedDataForCharts.length === 0) return ['auto', 'auto'];
+    const values = formattedDataForCharts.map(d => d[dataKey]).filter(v => v !== null) as number[];
     if (values.length === 0) return ['auto', 'auto'];
     const min = Math.min(...values);
     const max = Math.max(...values);
-    const padding = (max - min) * 0.1 || 1;
-    return [Math.floor(min - padding), Math.ceil(max + padding)];
+    const padding = (max - min) * 0.2 || 1;
+    const finalMin = Math.max(0, Math.floor(min - padding));
+    const finalMax = Math.ceil(max + padding);
+    return [finalMin, finalMax];
   };
 
   return (
@@ -195,21 +233,60 @@ export default function Dashboard() {
           <div>
             <CardTitle>System Analytics</CardTitle>
             <CardDescription>
-              Showing charts for {filterLabels[filter] || `data for ${filter}`}.
+              Showing data from {isClient && dateRange.from ? format(dateRange.from, "LLL dd, y") : ''} to {isClient && dateRange.to ? format(dateRange.to, "LLL dd, y") : ''} with a {resolution} resolution.
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <Select value={filter} onValueChange={setFilter}>
+           <div className="flex flex-wrap items-center gap-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="date"
+                  variant={"outline"}
+                  className={cn(
+                    "w-[280px] justify-start text-left font-normal",
+                    !dateRange && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateRange?.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, "LLL dd, y")} -{" "}
+                        {format(dateRange.to, "LLL dd, y")}
+                      </>
+                    ) : (
+                      format(dateRange.from, "LLL dd, y")
+                    )
+                  ) : (
+                    <span>Pick a date range</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  defaultMonth={dateRange.from}
+                  selected={dateRange}
+                  onSelect={setDateRange}
+                  numberOfMonths={2}
+                  disabled={(date) =>
+                    isBefore(date, earliestDate) || isAfter(date, latestDate)
+                  }
+                />
+              </PopoverContent>
+            </Popover>
+            <Select value={resolution} onValueChange={setResolution}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by time" />
+                <SelectValue placeholder="Resolution" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="24h">Last 24 Hours</SelectItem>
-                <SelectItem value="7d">Last 7 Days</SelectItem>
-                <SelectItem value="30d">Last 30 Days</SelectItem>
-                {availableDates.map(date => (
-                  <SelectItem key={date} value={date}>{date}</SelectItem>
-                ))}
+                <SelectItem value="30m">Every 30 minutes</SelectItem>
+                <SelectItem value="1h">Every 1 hour</SelectItem>
+                <SelectItem value="2h">Every 2 hours</SelectItem>
+                <SelectItem value="4h">Every 4 hours</SelectItem>
+                <SelectItem value="12h">Every 12 hours</SelectItem>
+                <SelectItem value="24h">Every 24 hours</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -268,7 +345,7 @@ export default function Dashboard() {
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
                 <h3 className="text-lg font-semibold">Data Log</h3>
                 <div className="flex items-center gap-2">
-                  <Select value={selectedDate} onValueChange={setSelectedDate}>
+                  <Select value={selectedTableDate} onValueChange={setSelectedTableDate}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Filter by date" />
                     </SelectTrigger>
@@ -303,13 +380,13 @@ export default function Dashboard() {
                   <TableBody>
                     {paginatedData.map(row => (
                       <TableRow key={row.timestamp}>
-                        <TableCell>{isClient ? format(parseDate(row.timestamp), 'yyyy-MM-dd HH:mm:ss') : ''}</TableCell>
-                        <TableCell className="text-right">{row.ph_value !== null ? row.ph_value.toFixed(2) : 'N/A'}</TableCell>
-                        <TableCell className="text-right">{row.ec_value !== null ? row.ec_value.toFixed(2) : 'N/A'}</TableCell>
-                        <TableCell className="text-right">{row.water_temp !== null ? row.water_temp.toFixed(1) : 'N/A'}</TableCell>
-                        <TableCell className="text-right">{row.surround_temp !== null ? row.surround_temp.toFixed(1) : 'N/A'}</TableCell>
-                        <TableCell className="text-right">{row.humidity !== null ? row.humidity.toFixed(1) : 'N/A'}</TableCell>
-                        <TableCell className="text-right">{row.lux_value !== null ? row.lux_value : 'N/A'}</TableCell>
+                        <TableCell>{isClient ? format(parseDate(row.timestamp)!, 'yyyy-MM-dd HH:mm:ss') : ''}</TableCell>
+                        <TableCell className="text-right">{typeof row.ph_value === 'number' ? row.ph_value.toFixed(2) : 'N/A'}</TableCell>
+                        <TableCell className="text-right">{typeof row.ec_value === 'number' ? row.ec_value.toFixed(2) : 'N/A'}</TableCell>
+                        <TableCell className="text-right">{typeof row.water_temp === 'number' ? row.water_temp.toFixed(1) : 'N/A'}</TableCell>
+                        <TableCell className="text-right">{typeof row.surround_temp === 'number' ? row.surround_temp.toFixed(1) : 'N/A'}</TableCell>
+                        <TableCell className="text-right">{typeof row.humidity === 'number' ? row.humidity.toFixed(1) : 'N/A'}</TableCell>
+                        <TableCell className="text-right">{typeof row.lux_value === 'number' ? row.lux_value : 'N/A'}</TableCell>
                         <TableCell>{row.water_level}</TableCell>
                         <TableCell>{row.dosing_pump}</TableCell>
                       </TableRow>
