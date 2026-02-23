@@ -40,8 +40,12 @@ type DataRecord = {
   dosing_pump: string;
 };
 
-// This function now flattens the nested JSON structure
-const data: DataRecord[] = Object.values(hydroponicsData).flatMap(dayData => Object.values(dayData)).map((d: any) => ({
+const parseDate = (timestamp: string) => parse(timestamp, 'yyyy/MM/dd HH:mm:ss', new Date());
+
+// This function now flattens the nested JSON structure and sorts it chronologically
+const data: DataRecord[] = Object.values(hydroponicsData)
+  .flatMap(dayData => Object.values(dayData))
+  .map((d: any) => ({
     timestamp: d.timestamp,
     ec_value: d.ec_value === 'N/A' ? null : Number(d.ec_value),
     ph_value: d.ph_value === 'N/A' || d.ph_value === 'N/á' ? null : Number(d.ph_value),
@@ -51,9 +55,8 @@ const data: DataRecord[] = Object.values(hydroponicsData).flatMap(dayData => Obj
     surround_temp: d.surround_temp === 'N/A' ? null : Number(d.surround_temp),
     water_level: d.water_level,
     dosing_pump: d.dosing_pump,
-  }));
-
-const parseDate = (timestamp: string) => parse(timestamp, 'yyyy/MM/dd HH:mm:ss', new Date());
+  }))
+  .sort((a, b) => parseDate(a.timestamp).getTime() - parseDate(b.timestamp).getTime());
 
 const validDates = data
   .map(d => parseDate(d.timestamp))
@@ -77,7 +80,10 @@ export default function Dashboard() {
     setIsClient(true);
   }, []);
 
-  const availableDates = useMemo(() => Object.keys(hydroponicsData), []);
+  const availableDates = useMemo(() => {
+    // Sort dates in descending order (most recent first)
+    return Object.keys(hydroponicsData).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+  }, []);
 
   // Filtering for charts
   const filteredDataForCharts = useMemo(() => {
@@ -127,7 +133,7 @@ export default function Dashboard() {
         return reversed;
     }
     return reversed.filter(d => d.timestamp.startsWith(selectedDate.replace(/-/g, '/')));
-  }, [data, selectedDate]);
+  }, [selectedDate]);
 
   const totalPages = Math.ceil(tableData.length / rowsPerPage);
 
