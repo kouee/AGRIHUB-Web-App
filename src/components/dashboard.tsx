@@ -85,6 +85,9 @@ export default function Dashboard() {
     from: subDays(latestDate, 7),
     to: latestDate,
   });
+  const [draftDateRange, setDraftDateRange] = useState(dateRange);
+  const [isDatePopoverOpen, setIsDatePopoverOpen] = useState(false);
+
 
   const [resolution, setResolution] = useState('1h');
 
@@ -171,11 +174,14 @@ export default function Dashboard() {
   const tableData = useMemo(() => {
     setCurrentPage(1);
     
+    const sortedData = [...data].sort((a, b) => parseDate(b.timestamp)!.getTime() - parseDate(a.timestamp)!.getTime());
+    
     if (selectedTableDate === 'all') {
-        return [...data].sort((a, b) => parseDate(b.timestamp)!.getTime() - parseDate(a.timestamp)!.getTime());
+        return sortedData;
     }
+
     const normalizedSelectedDate = selectedTableDate.replace(/-/g, '/');
-    return data.filter(d => d.timestamp.startsWith(normalizedSelectedDate)).sort((a, b) => parseDate(b.timestamp)!.getTime() - parseDate(a.timestamp)!.getTime());
+    return sortedData.filter(d => d.timestamp.startsWith(normalizedSelectedDate));
   }, [selectedTableDate]);
 
   const totalPages = Math.ceil(tableData.length / rowsPerPage);
@@ -247,7 +253,12 @@ export default function Dashboard() {
             </CardDescription>
           </div>
            <div className="flex flex-wrap items-center gap-2">
-            <Popover>
+            <Popover open={isDatePopoverOpen} onOpenChange={(open) => {
+              if (open) {
+                setDraftDateRange(dateRange);
+              }
+              setIsDatePopoverOpen(open);
+            }}>
               <PopoverTrigger asChild>
                 <Button
                   id="date"
@@ -272,18 +283,29 @@ export default function Dashboard() {
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto" align="start">
                 <Calendar
                   initialFocus
                   mode="range"
-                  defaultMonth={dateRange?.from || latestDate}
-                  selected={dateRange}
-                  onSelect={setDateRange}
+                  defaultMonth={draftDateRange?.from || latestDate}
+                  selected={draftDateRange}
+                  onSelect={setDraftDateRange}
                   numberOfMonths={1}
                   disabled={(date) =>
                     isBefore(date, earliestDate) || isAfter(date, latestDate)
                   }
                 />
+                <div className="p-4 pt-2">
+                  <Button
+                      className="w-full"
+                      onClick={() => {
+                          setDateRange(draftDateRange);
+                          setIsDatePopoverOpen(false);
+                      }}
+                  >
+                      Confirm
+                  </Button>
+                </div>
               </PopoverContent>
             </Popover>
             <Select value={resolution} onValueChange={setResolution}>
