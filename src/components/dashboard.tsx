@@ -87,15 +87,17 @@ const data: DataRecord[] = allDataRaw
 const latestDate = data.length > 0 ? parseDate(data[data.length - 1].timestamp)! : new Date();
 const earliestDate = data.length > 0 ? parseDate(data[0].timestamp)! : new Date();
 
+const defaultInitialDateRange: DateRange = {
+  from: subDays(latestDate, 7),
+  to: latestDate,
+};
+
 
 export default function Dashboard() {
   const [isClient, setIsClient] = useState(false);
   
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: subDays(latestDate, 7),
-    to: latestDate,
-  });
-  const [draftDateRange, setDraftDateRange] = useState<DateRange | undefined>(dateRange);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(defaultInitialDateRange);
+  const [draftDateRange, setDraftDateRange] = useState<DateRange | undefined>(defaultInitialDateRange);
   const [isDatePopoverOpen, setIsDatePopoverOpen] = useState(false);
 
   const [resolution, setResolution] = useState('1h');
