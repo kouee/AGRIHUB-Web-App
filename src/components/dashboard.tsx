@@ -71,11 +71,11 @@ const data: DataRecord[] = allDataRaw
     return parsed;
   })
   .filter((d): d is Exclude<typeof d, null> => d !== null)
-  .sort((a, b) => b.date!.getTime() - a.date!.getTime())
+  .sort((a, b) => a.date!.getTime() - b.date!.getTime())
   .map(({ date, ...rest }) => rest as DataRecord);
 
-const latestDate = data.length > 0 ? parseDate(data[0].timestamp)! : new Date();
-const earliestDate = data.length > 0 ? parseDate(data[data.length - 1].timestamp)! : new Date();
+const latestDate = data.length > 0 ? parseDate(data[data.length - 1].timestamp)! : new Date();
+const earliestDate = data.length > 0 ? parseDate(data[0].timestamp)! : new Date();
 
 
 export default function Dashboard() {
@@ -113,20 +113,27 @@ export default function Dashboard() {
   }, [resolution]);
 
   const downsampledData = useMemo(() => {
-    if (!dateRange.from || !dateRange.to) return [];
+    if (!dateRange.from) return [];
+
+    const fromDate = new Date(dateRange.from);
+    fromDate.setHours(0, 0, 0, 0);
+
+    const toDate = dateRange.to ? new Date(dateRange.to) : new Date(dateRange.from);
+    toDate.setHours(23, 59, 59, 999);
 
     const rangeData = data.filter(d => {
         const date = parseDate(d.timestamp);
         if (!date) return false;
-        return (date.getTime() >= dateRange.from!.getTime() && date.getTime() <= dateRange.to!.getTime());
+        const time = date.getTime();
+        return time >= fromDate.getTime() && time <= toDate.getTime();
     });
 
     if (rangeData.length === 0) return [];
     
     const result: DataRecord[] = [];
-    let currentTime = new Date(dateRange.from.getTime());
+    let currentTime = fromDate;
 
-    while (currentTime.getTime() <= dateRange.to.getTime()) {
+    while (currentTime.getTime() <= toDate.getTime()) {
       const intervalEnd = addMinutes(currentTime, resolutionInMinutes);
       
       const pointsInInterval = rangeData.filter(p => {
@@ -148,7 +155,7 @@ export default function Dashboard() {
       currentTime = intervalEnd;
     }
     
-    return result;
+    return result.sort((a, b) => parseDate(a.timestamp)!.getTime() - parseDate(b.timestamp)!.getTime());
 
   }, [dateRange, resolutionInMinutes]);
 
@@ -165,10 +172,10 @@ export default function Dashboard() {
     setCurrentPage(1);
     
     if (selectedTableDate === 'all') {
-        return data;
+        return [...data].sort((a, b) => parseDate(b.timestamp)!.getTime() - parseDate(a.timestamp)!.getTime());
     }
     const normalizedSelectedDate = selectedTableDate.replace(/-/g, '/');
-    return data.filter(d => d.timestamp.startsWith(normalizedSelectedDate));
+    return data.filter(d => d.timestamp.startsWith(normalizedSelectedDate)).sort((a, b) => parseDate(b.timestamp)!.getTime() - parseDate(a.timestamp)!.getTime());
   }, [selectedTableDate]);
 
   const totalPages = Math.ceil(tableData.length / rowsPerPage);
@@ -233,7 +240,10 @@ export default function Dashboard() {
           <div>
             <CardTitle>System Analytics</CardTitle>
             <CardDescription>
-              Showing data from {isClient && dateRange.from ? format(dateRange.from, "LLL dd, y") : ''} to {isClient && dateRange.to ? format(dateRange.to, "LLL dd, y") : ''} with a {resolution} resolution.
+              Showing data
+              {isClient && dateRange.from ? ` from ${format(dateRange.from, "LLL dd, y")}` : ''}
+              {isClient && dateRange.to ? ` to ${format(dateRange.to, "LLL dd, y")}` : ` to ${isClient && dateRange.from ? format(dateRange.from, "LLL dd, y") : ''}`}
+              . Resolution: {resolution}.
             </CardDescription>
           </div>
            <div className="flex flex-wrap items-center gap-2">
@@ -266,10 +276,10 @@ export default function Dashboard() {
                 <Calendar
                   initialFocus
                   mode="range"
-                  defaultMonth={dateRange.from}
+                  defaultMonth={dateRange?.from || latestDate}
                   selected={dateRange}
                   onSelect={setDateRange}
-                  numberOfMonths={2}
+                  numberOfMonths={1}
                   disabled={(date) =>
                     isBefore(date, earliestDate) || isAfter(date, latestDate)
                   }
