@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, ChevronRight, TestTube2, Thermometer, Droplets, Lightbulb, CheckCircle, BarChart3, Database, Bell, Cpu, Cable, Leaf, Bot, Target, FileLock, Rocket, Presentation, Users, Mail, Phone, MapPin, Twitter, Linkedin, Github } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Dashboard from '@/components/dashboard';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import ContactForm from '@/components/contact-form';
 import { Badge } from '@/components/ui/badge';
 import AnimatedSection from '@/components/animated-section';
@@ -69,17 +68,13 @@ const features = [
 ];
 
 const teamMembers = [
-  { name: "Alex Johnson", role: "Project Lead & Hardware Engineer", image: "team-1" },
-  { name: "Samantha Lee", role: "Software & Cloud Developer", image: "team-2" },
-  { name: "David Chen", role: "UI/UX Designer & Data Analyst", image: "team-3" },
+  { name: "Alex Johnson", role: "Project Lead & Hardware Engineer", image: "/Henry.jpg" },
+  { name: "Samantha Lee", role: "Software & Cloud Developer", image: "/Edison.jpg" },
+  { name: "David Chen", role: "UI/UX Designer & Data Analyst", image: "/Morten.jpg" },
 ];
 
 
 export default function Home() {
-  const demoImage1 = PlaceHolderImages.find(p => p.id === 'demo-1');
-  const demoImage2 = PlaceHolderImages.find(p => p.id === 'demo-2');
-  const demoImage3 = PlaceHolderImages.find(p => p.id === 'demo-3');
-
   return (
     <div className="flex min-h-screen w-full flex-col">
       <Header />
@@ -341,60 +336,51 @@ export default function Home() {
               </div>
             </div>
             <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-3 pt-8">
-              {demoImage1 && (
-                <Card>
-                  <CardContent className="p-0">
-                    <Image
-                      alt={demoImage1.description}
-                      className="aspect-video overflow-hidden rounded-t-lg object-cover"
-                      height={360}
-                      src={demoImage1.imageUrl}
-                      width={640}
-                      data-ai-hint={demoImage1.imageHint}
-                    />
-                  </CardContent>
-                  <div className="p-4">
-                    <h3 className="font-bold text-lg">Live Dashboard</h3>
-                    <p className="text-sm text-muted-foreground">Real-time data visualization of all sensors.</p>
-                  </div>
-                </Card>
-              )}
-              {demoImage2 && (
-                <Card>
-                  <CardContent className="p-0">
-                    <Image
-                      alt={demoImage2.description}
-                      className="aspect-video overflow-hidden rounded-t-lg object-cover"
-                      height={360}
-                      src={demoImage2.imageUrl}
-                      width={640}
-                      data-ai-hint={demoImage2.imageHint}
-                    />
-                  </CardContent>
-                  <div className="p-4">
-                    <h3 className="font-bold text-lg">Sensor Array</h3>
-                    <p className="text-sm text-muted-foreground">The compact and durable hardware in action.</p>
-                  </div>
-                </Card>
-              )}
-               {demoImage3 && (
-                <Card>
-                  <CardContent className="p-0">
-                    <Image
-                      alt={demoImage3.description}
-                      className="aspect-video overflow-hidden rounded-t-lg object-cover"
-                      height={360}
-                      src={demoImage3.imageUrl}
-                      width={640}
-                      data-ai-hint={demoImage3.imageHint}
-                    />
-                  </CardContent>
-                  <div className="p-4">
-                    <h3 className="font-bold text-lg">Healthy Growth</h3>
-                    <p className="text-sm text-muted-foreground">Vibrant lettuce enjoying optimal conditions.</p>
-                  </div>
-                </Card>
-              )}
+              <Card>
+                <CardContent className="p-0">
+                  <Image
+                    alt="Live Dashboard"
+                    className="aspect-video overflow-hidden rounded-t-lg object-cover"
+                    height={360}
+                    src="/results1.jpg"
+                    width={640}
+                  />
+                </CardContent>
+                <div className="p-4">
+                  <h3 className="font-bold text-lg">Live Dashboard</h3>
+                  <p className="text-sm text-muted-foreground">Real-time data visualization of all sensors.</p>
+                </div>
+              </Card>
+              <Card>
+                <CardContent className="p-0">
+                  <Image
+                    alt="Sensor Array"
+                    className="aspect-video overflow-hidden rounded-t-lg object-cover"
+                    height={360}
+                    src="/results2.jpg"
+                    width={640}
+                  />
+                </CardContent>
+                <div className="p-4">
+                  <h3 className="font-bold text-lg">Sensor Array</h3>
+                  <p className="text-sm text-muted-foreground">The compact and durable hardware in action.</p>
+                </div>
+              </Card>
+              <Card>
+                <CardContent className="p-0">
+                  <Image
+                    alt="Healthy Growth"
+                    className="aspect-video overflow-hidden rounded-t-lg object-cover"
+                    height={360}
+                    src="/results3.jpg"
+                    width={640}
+                  />
+                </CardContent>
+                <div className="p-4">
+                  <h3 className="font-bold text-lg">Healthy Growth</h3>
+                  <p className="text-sm text-muted-foreground">Vibrant lettuce enjoying optimal conditions.</p>
+                </div>
+              </Card>
             </div>
           </div>
         </AnimatedSection>
@@ -454,30 +440,25 @@ export default function Home() {
                 </p>
               </div>
               <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-3 pt-8">
-                {teamMembers.map((member) => {
-                  const image = PlaceHolderImages.find(p => p.id === member.image);
-                  return (
+                {teamMembers.map((member) => (
                   <Card key={member.name} className="text-center">
                     <CardContent className="pt-6">
-                      {image && (
                         <Image
                           alt={`Portrait of ${member.name}`}
                           className="rounded-full mx-auto mb-4"
                           height={120}
-                          src={image.imageUrl}
+                          src={member.image}
                           style={{
                             aspectRatio: "120/120",
                             objectFit: "cover",
                           }}
                           width={120}
-                          data-ai-hint={image.imageHint}
                         />
-                      )}
                       <h3 className="text-xl font-bold">{member.name}</h3>
                       <p className="text-muted-foreground">{member.role}</p>
                     </CardContent>
                   </Card>
-                )})}
+                ))}
               </div>
             </div>
           </div>
