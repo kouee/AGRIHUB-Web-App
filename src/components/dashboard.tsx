@@ -192,8 +192,8 @@ export default function Dashboard() {
                     <LineChart data={formattedData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                        <YAxis yAxisId="left" domain={[5, 8]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                        <YAxis yAxisId="right" orientation="right" domain={[1, 2.5]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                        <YAxis yAxisId="left" domain={[3, 9]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                        <YAxis yAxisId="right" orientation="right" domain={[0, 4]} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
                         <Tooltip content={<CustomTooltip />} />
                         <Legend />
                         <Line yAxisId="left" type="monotone" dataKey="ph_value" name="pH" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} connectNulls />
