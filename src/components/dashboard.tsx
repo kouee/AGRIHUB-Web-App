@@ -30,6 +30,7 @@ import { Download, Calendar as CalendarIcon } from 'lucide-react';
 import hydroponicsData from '@/app/data/hydroponics-data-nov-to-feb.json';
 import { format, parse, isAfter, isBefore, addMinutes, subDays } from 'date-fns';
 import { cn } from "@/lib/utils"
+import { DateRange } from 'react-day-picker';
 
 type DataRecord = {
   timestamp: string;
@@ -51,6 +52,14 @@ const parseDate = (timestamp: string): Date | null => {
   return isNaN(date.getTime()) ? null : date;
 };
 
+const parseNumeric = (value: any): number | null => {
+  if (value === null || value === undefined || (typeof value === 'string' && value.trim().toUpperCase() === 'N/A')) {
+    return null;
+  }
+  const num = parseFloat(value);
+  return isNaN(num) ? null : num;
+};
+
 const allDataRaw: any[] = Object.values(hydroponicsData).flatMap(dayData => Object.values(dayData));
 
 const data: DataRecord[] = allDataRaw
@@ -58,20 +67,21 @@ const data: DataRecord[] = allDataRaw
     const date = parseDate(d.timestamp);
     if (!date) return null;
 
-    const parsed = {
-      ...d,
+    return {
+      timestamp: d.timestamp,
       date: date,
-      ec_value: d.ec_value !== "N/A" && d.ec_value != null ? parseFloat(d.ec_value) : null,
-      ph_value: d.ph_value !== "N/A" && d.ph_value != null ? parseFloat(d.ph_value) : null,
-      water_temp: d.water_temp !== "N/A" && d.water_temp != null ? parseFloat(d.water_temp) : null,
+      ec_value: parseNumeric(d.ec_value),
+      ph_value: parseNumeric(d.ph_value),
+      water_temp: parseNumeric(d.water_temp),
       lux_value: d.lux_value !== "N/A" && d.lux_value != null ? parseInt(d.lux_value, 10) : null,
-      humidity: d.humidity !== "N/A" && d.humidity != null ? parseFloat(d.humidity) : null,
-      surround_temp: d.surround_temp !== "N/A" && d.surround_temp != null ? parseFloat(d.surround_temp) : null,
+      humidity: parseNumeric(d.humidity),
+      surround_temp: parseNumeric(d.surround_temp),
+      water_level: d.water_level,
+      dosing_pump: d.dosing_pump
     };
-    return parsed;
   })
-  .filter((d): d is Exclude<typeof d, null> => d !== null)
-  .sort((a, b) => a.date!.getTime() - b.date!.getTime())
+  .filter((d): d is Exclude<typeof d, null> & { date: Date } => d !== null)
+  .sort((a, b) => a.date.getTime() - b.date.getTime())
   .map(({ date, ...rest }) => rest as DataRecord);
 
 const latestDate = data.length > 0 ? parseDate(data[data.length - 1].timestamp)! : new Date();
@@ -81,16 +91,12 @@ const earliestDate = data.length > 0 ? parseDate(data[0].timestamp)! : new Date(
 export default function Dashboard() {
   const [isClient, setIsClient] = useState(false);
   
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(latestDate, 7),
     to: latestDate,
   });
-  const [draftDateRange, setDraftDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
-    from: subDays(latestDate, 7),
-    to: latestDate,
-  });
+  const [draftDateRange, setDraftDateRange] = useState<DateRange | undefined>(dateRange);
   const [isDatePopoverOpen, setIsDatePopoverOpen] = useState(false);
-
 
   const [resolution, setResolution] = useState('1h');
 
@@ -272,7 +278,7 @@ export default function Dashboard() {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateRange?.from ? (
+                  {isClient && dateRange?.from ? (
                     dateRange.to ? (
                       <>
                         {format(dateRange.from, "LLL dd, y")} -{" "}
@@ -292,7 +298,7 @@ export default function Dashboard() {
                   mode="range"
                   defaultMonth={draftDateRange?.from || latestDate}
                   selected={draftDateRange}
-                  onSelect={(range) => setDraftDateRange(range || undefined)}
+                  onSelect={setDraftDateRange}
                   numberOfMonths={1}
                   disabled={(date) =>
                     isBefore(date, earliestDate) || isAfter(date, latestDate)
@@ -302,8 +308,10 @@ export default function Dashboard() {
                   <Button
                       className="w-full"
                       onClick={() => {
+                        if (draftDateRange) {
                           setDateRange(draftDateRange);
-                          setIsDatePopoverOpen(false);
+                        }
+                        setIsDatePopoverOpen(false);
                       }}
                   >
                       Confirm
