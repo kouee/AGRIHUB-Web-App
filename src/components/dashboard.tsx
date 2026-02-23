@@ -40,31 +40,39 @@ type DataRecord = {
   dosing_pump: string;
 };
 
-const parseDate = (timestamp: string) => parse(timestamp, 'yyyy/MM/dd HH:mm:ss', new Date());
+const parseDate = (timestamp: string): Date => {
+  return parse(timestamp, 'yyyy/MM/dd HH:mm:ss', new Date());
+};
 
-// This function now flattens the nested JSON structure and sorts it chronologically
+// 1. Flatten the nested JSON structure.
+// 2. Parse timestamps into Date objects, filtering out any invalid records.
+// 3. Sort the data chronologically.
 const data: DataRecord[] = Object.values(hydroponicsData)
   .flatMap(dayData => Object.values(dayData))
-  .map((d: any) => ({
-    timestamp: d.timestamp,
-    ec_value: d.ec_value === 'N/A' ? null : Number(d.ec_value),
-    ph_value: d.ph_value === 'N/A' || d.ph_value === 'N/á' ? null : Number(d.ph_value),
-    water_temp: d.water_temp === 'N/A' ? null : Number(d.water_temp),
-    lux_value: d.lux_value === 'N/A' ? null : Number(d.lux_value),
-    humidity: d.humidity === 'N/A' ? null : Number(d.humidity),
-    surround_temp: d.surround_temp === 'N/A' ? null : Number(d.surround_temp),
-    water_level: d.water_level,
-    dosing_pump: d.dosing_pump,
-  }))
-  .sort((a, b) => parseDate(a.timestamp).getTime() - parseDate(b.timestamp).getTime());
+  .map((d: any) => {
+    const date = parseDate(d.timestamp);
+    return {
+      date, // temporary field for sorting
+      data: {
+        timestamp: d.timestamp,
+        ec_value: d.ec_value === 'N/A' ? null : Number(d.ec_value),
+        ph_value: d.ph_value === 'N/A' || d.ph_value === 'N/á' ? null : Number(d.ph_value),
+        water_temp: d.water_temp === 'N/A' ? null : Number(d.water_temp),
+        lux_value: d.lux_value === 'N/A' ? null : Number(d.lux_value),
+        humidity: d.humidity === 'N/A' ? null : Number(d.humidity),
+        surround_temp: d.surround_temp === 'N/A' ? null : Number(d.surround_temp),
+        water_level: d.water_level,
+        dosing_pump: d.dosing_pump,
+      } as DataRecord
+    }
+  })
+  .filter(item => item.date instanceof Date && !isNaN(item.date.getTime()))
+  .sort((a, b) => a.date.getTime() - b.date.getTime())
+  .map(item => item.data); // Map back to the original DataRecord structure
 
-const validDates = data
-  .map(d => parseDate(d.timestamp))
-  .filter(d => d instanceof Date && !isNaN(d.getTime()));
 
-const latestDate = validDates.length > 0
-  ? new Date(Math.max(...validDates.map(d => d.getTime())))
-  : new Date();
+// The latest date is now simply the last entry in the sorted data array.
+const latestDate = data.length > 0 ? parseDate(data[data.length - 1].timestamp) : new Date();
 
 
 export default function Dashboard() {
@@ -132,7 +140,10 @@ export default function Dashboard() {
     if (selectedDate === 'all') {
         return reversed;
     }
-    return reversed.filter(d => d.timestamp.startsWith(selectedDate.replace(/-/g, '/')));
+    // The date keys in the JSON are YYYY-MM-DD, but timestamps are YYYY/MM/DD.
+    // So we need to convert one to match the other.
+    const normalizedSelectedDate = selectedDate.replace(/-/g, '/');
+    return reversed.filter(d => d.timestamp.startsWith(normalizedSelectedDate));
   }, [selectedDate]);
 
   const totalPages = Math.ceil(tableData.length / rowsPerPage);
