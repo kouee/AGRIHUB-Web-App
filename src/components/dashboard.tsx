@@ -66,6 +66,8 @@ const latestDate = validDates.length > 0
 export default function Dashboard() {
   const [filter, setFilter] = useState<string>('7d');
   const [isClient, setIsClient] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 50;
 
   useEffect(() => {
     setIsClient(true);
@@ -76,6 +78,9 @@ export default function Dashboard() {
     
     // Use the latest date from the data as the reference 'now'
     const now = latestDate;
+
+    // Reset to page 1 whenever the filter changes
+    setCurrentPage(1);
 
     if (filter === 'all') {
       return data;
@@ -109,6 +114,18 @@ export default function Dashboard() {
       formattedTimestamp: isClient ? format(parseDate(d.timestamp), 'MMM d, HH:mm') : '',
     }));
   }, [filteredData, isClient]);
+
+  const reversedData = useMemo(() => {
+    return formattedData.slice().reverse();
+  }, [formattedData]);
+
+  const totalPages = Math.ceil(reversedData.length / rowsPerPage);
+
+  const paginatedData = useMemo(() => {
+      const startIndex = (currentPage - 1) * rowsPerPage;
+      const endIndex = startIndex + rowsPerPage;
+      return reversedData.slice(startIndex, endIndex);
+  }, [reversedData, currentPage]);
   
   const filterLabels: { [key: string]: string } = {
     '24h': 'the last 24 hours of data',
@@ -207,8 +224,8 @@ export default function Dashboard() {
                         <LineChart data={formattedData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                             <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                            <YAxis yAxisId="left" domain={[20, 30]} label={{ value: '°C', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
-                            <YAxis yAxisId="right" orientation="right" domain={[20, 30]} label={{ value: '°C', angle: 90, position: 'insideRight', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
+                            <YAxis yAxisId="left" domain={[15, 35]} label={{ value: '°C', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
+                            <YAxis yAxisId="right" orientation="right" domain={[15, 35]} label={{ value: '°C', angle: 90, position: 'insideRight', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
                             <Tooltip content={<CustomTooltip />} />
                             <Legend />
                             <Line yAxisId="left" type="monotone" dataKey="water_temp" name="Water Temp (°C)" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} connectNulls />
@@ -223,7 +240,7 @@ export default function Dashboard() {
                     <BarChart data={formattedData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                         <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                        <YAxis domain={[50, 100]} label={{ value: '%', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
+                        <YAxis domain={[40, 100]} label={{ value: '%', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
                         <Tooltip content={<CustomTooltip />} />
                         <Legend />
                         <Bar dataKey="humidity" name="Humidity (%)" fill="hsl(var(--chart-3))" />
@@ -233,7 +250,7 @@ export default function Dashboard() {
 
             <div>
               <h3 className="text-lg font-semibold mb-4">Data Log</h3>
-              <div className="max-h-96 overflow-auto border rounded-md">
+              <div className="max-h-[600px] overflow-auto border rounded-md">
                 <Table>
                   <TableHeader className="sticky top-0 bg-card">
                     <TableRow>
@@ -249,7 +266,7 @@ export default function Dashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {formattedData.slice().reverse().map(row => (
+                    {paginatedData.map(row => (
                       <TableRow key={row.timestamp}>
                         <TableCell>{isClient ? format(parseDate(row.timestamp), 'yyyy-MM-dd HH:mm:ss') : ''}</TableCell>
                         <TableCell className="text-right">{row.ph_value !== null ? row.ph_value.toFixed(2) : 'N/A'}</TableCell>
@@ -264,6 +281,27 @@ export default function Dashboard() {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+               <div className="flex items-center justify-end space-x-2 py-4">
+                <span className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
               </div>
             </div>
           </>
