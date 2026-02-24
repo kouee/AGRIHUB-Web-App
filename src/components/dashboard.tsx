@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -345,18 +346,33 @@ export default function Dashboard() {
                     </ResponsiveContainer>
                 </div>
             </div>
-            <div className="h-80">
-                <h3 className="text-lg font-semibold mb-2 text-center">Humidity</h3>
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={formattedDataForCharts}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                        <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
-                        <YAxis domain={yAxisDomain('humidity')} label={{ value: '%', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend />
-                        <Bar dataKey="humidity" name="Humidity (%)" fill="hsl(var(--chart-3))" />
-                    </BarChart>
-                </ResponsiveContainer>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="h-80">
+                  <h3 className="text-lg font-semibold mb-2 text-center">Humidity</h3>
+                  <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={formattedDataForCharts}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                          <YAxis domain={yAxisDomain('humidity')} label={{ value: '%', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
+                          <Tooltip content={<CustomTooltip />} />
+                          <Legend />
+                          <Bar dataKey="humidity" name="Humidity (%)" fill="hsl(var(--chart-3))" />
+                      </BarChart>
+                  </ResponsiveContainer>
+              </div>
+              <div className="h-80">
+                  <h3 className="text-lg font-semibold mb-2 text-center">Light Level (Lux)</h3>
+                  <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={formattedDataForCharts}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="formattedTimestamp" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                          <YAxis domain={yAxisDomain('lux_value')} label={{ value: 'Lux', angle: -90, position: 'insideLeft', fill: 'hsl(var(--muted-foreground))' }} tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}/>
+                          <Tooltip content={<CustomTooltip />} />
+                          <Legend />
+                          <Bar dataKey="lux_value" name="Light Level (Lux)" fill="hsl(var(--chart-4))" />
+                      </BarChart>
+                  </ResponsiveContainer>
+              </div>
             </div>
 
             <div>
@@ -444,5 +460,3 @@ export default function Dashboard() {
     </Card>
   );
 }
-
-    
