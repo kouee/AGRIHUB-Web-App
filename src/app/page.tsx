@@ -78,9 +78,9 @@ const features = [
 ];
 
 const teamMembers = [
-  { name: "Alex Johnson", role: "Project Lead & Hardware Engineer", image: "/Henry.jpg" },
-  { name: "Samantha Lee", role: "Software & IoT Developer", image: "/Edison.jpg" },
-  { name: "David Chen", role: "Hardware & IoT Developer", image: "/Morten.jpg" },
+  { name: "Henry Chau", role: "Project Lead & Hardware Engineer", image: "/Henry.jpg" },
+  { name: "Edison Chia", role: "Software & IoT Developer", image: "/Edison.jpg" },
+  { name: "Morten Quigley", role: "Hardware & IoT Developer", image: "/Morten.jpg" },
 ];
 
 
