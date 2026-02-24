@@ -18,25 +18,9 @@ Open your terminal in the project's root directory and run the following command
 npm install
 ```
 
-### 2. Set Up Environment Variables
+### 2. Run the Development Server
 
-The project uses Genkit for its AI features, which requires a Gemini API key. This is optional if you only plan to work on the UI and dashboard.
-
-1.  Create a new file in the root of your project named `.env.local`.
-2.  Add your API key to this file:
-
-```
-GEMINI_API_KEY="YOUR_API_KEY_HERE"
-```
-Replace `"YOUR_API_KEY_HERE"` with your actual Google AI Gemini API key.
-
-### 3. Run the Development Servers
-
-For the full application including AI features, you will need to run two separate processes.
-
-**Terminal 1: Run the Next.js App**
-
-This command starts the main web application. All visual components, charts, and the dashboard will work with just this server running.
+This command starts the main web application. All visual components, charts, and the dashboard will work with this server running.
 
 ```bash
 npm run dev
@@ -44,10 +28,46 @@ npm run dev
 
 The app will be available at [http://localhost:9002](http://localhost:9002).
 
-**Terminal 2: Run the Genkit AI Server (Optional)**
+## Updating the Dashboard Data
 
-This command starts the local server that handles AI-powered features. This is only necessary if you are developing or using AI functionality.
+The dashboard visualizes data from a JSON file. To use your own data, follow these steps:
 
-```bash
-npm run genkit:dev
+### 1. Prepare Your Data File
+
+Your data must be in a JSON file with a specific structure. The file should contain an object where keys are dates in `"YYYY-MM-DD"` format. Each date key should hold another object where keys are times in `"HH:mm:ss"` format.
+
+Here is an example of the required format for a single data entry:
+
+```json
+{
+  "2026-02-14": {
+    "07:32:28": {
+      "timestamp": "2026/02/14 07:32:28",
+      "ec_value": "1.89",
+      "ph_value": "5.46",
+      "water_temp": "22.7",
+      "lux_value": "1351",
+      "humidity": "88.5",
+      "surround_temp": "21.3",
+      "water_level": "HIGH",
+      "dosing_pump": "off"
+    }
+  }
+}
 ```
+
+**Important:** Ensure all values are strings. The system will handle converting them to numbers where needed. Missing values can be represented as `"N/A"`.
+
+### 2. Update the Data Source
+
+1.  Place your new JSON data file inside the `src/app/data/` directory. For example, `my-new-data.json`.
+2.  Open the file `src/components/dashboard.tsx`.
+3.  Find the following import line at the top of the file:
+    ```javascript
+    import hydroponicsData from '@/app/data/hydroponics-data-nov-to-feb.json';
+    ```
+4.  Change the file path to point to your new data file:
+    ```javascript
+    import hydroponicsData from '@/app/data/my-new-data.json';
+    ```
+5.  Save the file. The dashboard will automatically reload and display your new data.
