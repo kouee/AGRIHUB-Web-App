@@ -137,7 +137,7 @@ export default function Home() {
         </AnimatedSection>
 
         <AnimatedSection id="objectives" className="w-full py-12 md:py-24 relative">
-          <div className="absolute top-0 right-0 h-full w-1/2 hidden lg:block">
+          <div className="absolute top-12 md:top-24 bottom-12 md:bottom-24 right-0 w-1/2 hidden lg:block">
             <Image
               alt="Lush hydroponic lettuce farm"
               src="/hydroponic.jpeg"
