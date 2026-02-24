@@ -17,51 +17,61 @@ import AnimatedSection from '@/components/animated-section';
 
 const hardwareComponents = [
   {
-    name: "ESP32",
+    name: "Microcontroller",
     purpose: "The brain of the system, processing sensor data and controlling actuators.",
-    spec: "Wi-Fi & Bluetooth enabled dual-core microcontroller."
+    spec: "Wi-Fi & Bluetooth enabled dual core microcontroller, low power."
   },
   {
     name: "pH Sensor",
-    purpose: "Measures the acidity or alkalinity of the nutrient solution.",
+    purpose: "Our custom engineered pH sensor measures the acidity or alkalinity of the nutrient solution.",
     spec: "Range: 0-14 pH, Accuracy: ±0.1 pH."
   },
   {
-    name: "EC Sensor & ADS1115",
+    name: "Industrial Grade EC Sensor",
     purpose: "Measures electrical conductivity to determine nutrient concentration.",
-    spec: "Paired with a 16-bit ADC for high precision."
+    spec: "Automated calibration for accurate readings, Accuract: ±0.15 ms/cm ."
   },
   {
     name: "Water Level Sensor",
-    purpose: "Monitors the water level in the reservoir to prevent pump damage.",
-    spec: "Non-contact ultrasonic sensor for durability."
+    purpose: "Monitors the water level in the reservoir to prevent overflow and adds water.",
+    spec: "Physical water level switch for more stable and reliable automation."
   },
   {
     name: "Temp/Humidity Sensor",
     purpose: "Monitors ambient temperature and humidity for climate control.",
-    spec: "DHT22 sensor for reliable readings."
+    spec: "waterproof design and industrial grade sensor for reliable readings."
   },
   {
-    name: "Light Sensor (BH1750)",
+    name: "Light Sensor",
     purpose: "Measures light intensity to ensure optimal photoperiods.",
     spec: "High precision digital ambient light sensor."
   },
   {
     name: "Peristaltic Pumps & Relays",
-    purpose: "For accurately dosing pH adjusters and nutrients into the system.",
-    spec: "Controlled via a multi-channel relay module."
+    purpose: "For accurately dosing pH or EC nutrients and water intake into the water tank.",
+    spec: "Controlled via a multi channel relay module."
+  },
+  {
+    name: "LCD Display and Buttons",
+    purpose: "To display real time data on the dashboard and to configurate the system automation.",
+    spec: "20x4 LCD Display with 4 buttons."
+  },
+  {
+    name: "High Powered Socket",
+    purpose: "For extra high powered usage, such as Growth Light, Water Pump",
+    spec: "Able to Handle maximum 1500W."
   },
   {
     name: "Power System",
     purpose: "Provides stable and reliable power to all electronic components.",
-    spec: "5V/12V dual output power supply."
+    spec: "AC 240V supply, steps down to 5V/12V dual output power supply."
   }
 ];
 
 const features = [
-  { icon: <BarChart3 />, title: "Real-time Monitoring", description: "Continuously track vital parameters on an intuitive dashboard." },
+  { icon: <BarChart3 />, title: "Real time Monitoring", description: "Continuously track vital parameters on an intuitive dashboard." },
   { icon: <Bot />, title: "Auto Nutrient Control", description: "Automatically maintains perfect pH and EC levels for optimal growth." },
-  { icon: <TestTube2 />, title: "Easy pH Calibration", description: "Simple, guided process to ensure your sensor readings are always accurate." },
+  { icon: <TestTube2 />, title: "Easy EC Calibration", description: "Simple, guided process to ensure your sensor readings are always accurate." },
   { icon: <Bell />, title: "Instant Alerts", description: "Receive notifications when parameters go out of the optimal range." },
   { icon: <Database />, title: "Data Logging", description: "All sensor data is stored for historical analysis and trend spotting." },
   { icon: <Presentation />, title: "Advanced Analytics", description: "Visualize data with interactive charts to gain insights into your crop's health." },
@@ -69,8 +79,8 @@ const features = [
 
 const teamMembers = [
   { name: "Alex Johnson", role: "Project Lead & Hardware Engineer", image: "/Henry.jpg" },
-  { name: "Samantha Lee", role: "Software & Cloud Developer", image: "/Edison.jpg" },
-  { name: "David Chen", role: "UI/UX Designer & Data Analyst", image: "/Morten.jpg" },
+  { name: "Samantha Lee", role: "Software & IoT Developer", image: "/Edison.jpg" },
+  { name: "David Chen", role: "Hardware & IoT Developer", image: "/Morten.jpg" },
 ];
 
 
@@ -141,8 +151,8 @@ export default function Home() {
                   <li className="flex items-start gap-4">
                     <div className="bg-primary/10 p-2 rounded-full"><Target className="w-6 h-6 text-primary" /></div>
                     <div>
-                      <h3 className="text-lg font-bold">Real-Time Monitoring</h3>
-                      <p className="text-muted-foreground">Provide continuous, real-time monitoring of critical parameters like pH, EC, temperature, and water levels.</p>
+                      <h3 className="text-lg font-bold">Real Time Monitoring</h3>
+                      <p className="text-muted-foreground">Provide continuous, real time monitoring of critical parameters like pH, EC, temperature, and water levels.</p>
                     </div>
                   </li>
                   <li className="flex items-start gap-4">
@@ -168,8 +178,16 @@ export default function Home() {
                   </li>
                 </ul>
               </div>
-               <div className="hidden lg:flex items-center justify-center">
-                 <Rocket className="w-48 h-48 md:w-72 md:h-72 text-primary/10" strokeWidth={0.5} />
+              <div className="relative hidden lg:block rounded-lg overflow-hidden min-h-[400px]">
+                <Image
+                  alt="Lush hydroponic lettuce farm"
+                  src="/hydroponic.jpeg"
+                  fill
+                  style={{ objectFit: 'cover' }}
+                  className="z-0"
+                  data-ai-hint="hydroponics lettuce"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-background to-transparent" />
               </div>
             </div>
           </div>
@@ -182,7 +200,7 @@ export default function Home() {
                 <Badge variant="secondary">How It Works</Badge>
                 <h2 className="font-headline text-3xl font-bold tracking-tighter sm:text-5xl">System Overview</h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  AGRIHUB integrates a network of sensors with a microcontroller. The ESP32 collects data, processes it against user-defined thresholds, and controls pumps to maintain the ideal environment. All data is streamed to a dashboard for remote monitoring.
+                  AGRIHUB integrates a network of sensors with our personally designed microcontroller, suited for collecting data, processes it against user defined thresholds, and controls pumps to maintain the suitable nutrients. All data is streamed to a dashboard for remote monitoring, and data collection is automated.
                 </p>
               </div>
               <div className="w-full max-w-4xl pt-8">
@@ -200,13 +218,13 @@ export default function Home() {
                             <div className="flex-shrink-0">
                                 <Card className="p-4 w-40 text-center">
                                     <Cable className="mx-auto w-8 h-8 mb-2 text-accent"/>
-                                    <p className="font-semibold">ESP32</p>
+                                    <p className="font-semibold">Reliable System</p>
                                 </Card>
                             </div>
                             <div className="flex-shrink-0">
                                 <Card className="p-4 w-40 text-center">
                                     <Bot className="mx-auto w-8 h-8 mb-2 text-accent"/>
-                                    <p className="font-semibold">Control</p>
+                                    <p className="font-semibold">Automated Control</p>
                                 </Card>
                             </div>
                             <div className="flex-shrink-0">
@@ -218,7 +236,7 @@ export default function Home() {
                             <div className="flex-shrink-0">
                                 <Card className="p-4 w-40 text-center">
                                     <Presentation className="mx-auto w-8 h-8 mb-2 text-accent"/>
-                                    <p className="font-semibold">Dashboard</p>
+                                    <p className="font-semibold">Accessible Dashboard</p>
                                 </Card>
                             </div>
                         </React.Fragment>
@@ -275,7 +293,7 @@ export default function Home() {
                       <li className="flex gap-2"><ChevronRight className="text-primary mt-1 w-4 h-4 flex-shrink-0"/><span><strong>Sensor Sampling & Filtering:</strong> We take multiple readings per second and apply moving average filters to eliminate noise and get stable values.</span></li>
                       <li className="flex gap-2"><ChevronRight className="text-primary mt-1 w-4 h-4 flex-shrink-0"/><span><strong>Calibration & Thresholds:</strong> The system supports multi-point calibration for sensors. Users can define precise upper and lower bounds for each parameter.</span></li>
                       <li className="flex gap-2"><ChevronRight className="text-primary mt-1 w-4 h-4 flex-shrink-0"/><span><strong>Control Logic:</strong> A robust state machine determines when to activate pumps, with built-in safeguards to prevent over-dosing.</span></li>
-                      <li className="flex gap-2"><ChevronRight className="text-primary mt-1 w-4 h-4 flex-shrink-0"/><span><strong>Data Logging:</strong> Data is logged locally to an SD card as a backup and streamed via MQTT to a cloud database for real-time dashboard updates.</span></li>
+                      <li className="flex gap-2"><ChevronRight className="text-primary mt-1 w-4 h-4 flex-shrink-0"/><span><strong>Data Logging:</strong> Data is logged locally to an SD card as a backup and streamed via MQTT to a cloud database for real time dashboard updates.</span></li>
                   </ul>
               </div>
             </div>
@@ -348,7 +366,7 @@ export default function Home() {
                 </CardContent>
                 <div className="p-4">
                   <h3 className="font-bold text-lg">Live Dashboard</h3>
-                  <p className="text-sm text-muted-foreground">Real-time data visualization of all sensors.</p>
+                  <p className="text-sm text-muted-foreground">Real time data visualization of all sensors.</p>
                 </div>
               </Card>
               <Card>
@@ -364,6 +382,21 @@ export default function Home() {
                 <div className="p-4">
                   <h3 className="font-bold text-lg">Sensor Array</h3>
                   <p className="text-sm text-muted-foreground">The compact and durable hardware in action.</p>
+                </div>
+              </Card>
+              <Card>
+                <CardContent className="p-0">
+                  <Image
+                    alt="Automation Control"
+                    className="aspect-video overflow-hidden rounded-t-lg object-cover"
+                    height={360}
+                    src="/results4.jpeg"
+                    width={640}
+                  />
+                </CardContent>
+                <div className="p-4">
+                  <h3 className="font-bold text-lg">Solenoid Control</h3>
+                  <p className="text-sm text-muted-foreground">The solenoid control system in action.</p>
                 </div>
               </Card>
               <Card>
@@ -406,7 +439,7 @@ export default function Home() {
                   <li className="flex items-start gap-4">
                     <div className="bg-primary/10 p-2 rounded-full"><CheckCircle className="w-6 h-6 text-primary" /></div>
                     <div>
-                      <h3 className="text-lg font-bold">Multi-Zone Support</h3>
+                      <h3 className="text-lg font-bold">Multi Zone Support</h3>
                       <p className="text-muted-foreground">Control and monitor multiple independent hydroponic systems from a single dashboard.</p>
                     </div>
                   </li>
@@ -477,9 +510,9 @@ export default function Home() {
               <div className="space-y-4 text-left">
                   <h3 className="text-xl font-bold">Contact Information</h3>
                   <div className="space-y-2 text-muted-foreground">
-                    <p className="flex items-center gap-2"><MapPin className="w-4 h-4 text-primary" />123 Green Tech Ave, Silicon Valley, CA 94043</p>
-                    <p className="flex items-center gap-2"><Phone className="w-4 h-4 text-primary" />+1 (555) 123-4567</p>
-                    <p className="flex items-center gap-2"><Mail className="w-4 h-4 text-primary" />contact@agrihub.tech</p>
+                    <p className="flex items-center gap-2"><MapPin className="w-4 h-4 text-primary" />Lot 27 Block D, 1st Floor, Donggongon Square, Pekan Donggongon, 89500 Penampang, Sabah</p>
+                    <p className="flex items-center gap-2"><Phone className="w-4 h-4 text-primary" />+60 10-218 1014</p>
+                    <p className="flex items-center gap-2"><Mail className="w-4 h-4 text-primary" />sprouttechnologieshq@gmail.com</p>
                   </div>
                   <div className="flex gap-4 pt-2">
                     <Button variant="ghost" size="icon" asChild><a href="#"><Twitter /></a></Button>
@@ -493,7 +526,7 @@ export default function Home() {
         </AnimatedSection>
       </main>
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <p className="text-xs text-muted-foreground">&copy; {new Date().getFullYear()} AGRIHUB. All rights reserved.</p>
+        <p className="text-xs text-muted-foreground">&copy; {new Date().getFullYear()} Sprout Technologies. All rights reserved.</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
           <a className="text-xs hover:underline underline-offset-4" href="#hero">Home</a>
           <a className="text-xs hover:underline underline-offset-4" href="#features">Features</a>
