@@ -136,8 +136,18 @@ export default function Home() {
           </div>
         </AnimatedSection>
 
-        <AnimatedSection id="objectives" className="w-full py-12 md:py-24">
-          <div className="container px-4 md:px-6">
+        <AnimatedSection id="objectives" className="w-full py-12 md:py-24 relative">
+          <div className="absolute top-0 right-0 h-full w-1/2 hidden lg:block">
+            <Image
+              alt="Lush hydroponic lettuce farm"
+              src="/hydroponic.jpeg"
+              fill
+              className="object-cover"
+              data-ai-hint="hydroponics lettuce"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-background to-transparent" />
+          </div>
+          <div className="container px-4 md:px-6 relative z-10">
             <div className="grid items-center gap-6 lg:grid-cols-2 lg:gap-12">
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-4">
@@ -178,16 +188,8 @@ export default function Home() {
                   </li>
                 </ul>
               </div>
-              <div className="relative hidden lg:block rounded-lg overflow-hidden min-h-[400px]">
-                <Image
-                  alt="Lush hydroponic lettuce farm"
-                  src="/hydroponic.jpeg"
-                  fill
-                  style={{ objectFit: 'cover' }}
-                  className="z-0"
-                  data-ai-hint="hydroponics lettuce"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-background to-transparent" />
+              <div className="hidden lg:block">
+                {/* This column is a placeholder to keep the grid structure. The image is now in the background. */}
               </div>
             </div>
           </div>
